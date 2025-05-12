@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scrapamax - Recherche multi-moteurs</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Scrapamax</h1>
+        <p>Recherchez un mot ou pseudo sur plusieurs moteurs de recherche</p>
+      </header>
+
+      <main>
+        <section class="search-section">
+          <form id="search-form">
+            <div class="search-container">
+              <input
+                type="text"
+                id="query"
+                name="query"
+                placeholder="Entrez un mot ou pseudo à rechercher..."
+                required
+              />
+              <button type="submit" id="search-button">Rechercher</button>
+            </div>
+          </form>
+          <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Recherche en cours sur tous les moteurs...</p>
+          </div>
+        </section>
+
+        <section class="results-section hidden" id="results-container">
+          <h2>Résultats pour: <span id="search-term"></span></h2>
+
+          <div class="tabs">
+            <button class="tab-button active" data-engine="all">Tous</button>
+            <button class="tab-button" data-engine="google">Google</button>
+            <button class="tab-button" data-engine="bing">Bing</button>
+            <button class="tab-button" data-engine="duckduckgo">
+              DuckDuckGo
+            </button>
+            <button class="tab-button" data-engine="yandex">Yandex</button>
+            <button class="tab-button" data-engine="ecosia">Ecosia</button>
+          </div>
+
+          <div id="results-list"></div>
+        </section>
+
+        <section class="history-section">
+          <h2>Historique des recherches</h2>
+          <div id="history-list">
+            <p class="loading-message">Chargement de l'historique...</p>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <p>&copy; 2023 Scrapamax - Outil de recherche multi-moteurs</p>
+      </footer>
+    </div>
+
+    <script src="/js/main.js"></script>
+  </body>
+</html>
