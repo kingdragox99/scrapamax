@@ -22,6 +22,18 @@ module.exports = {
   brave: "Brave",
   baidu: "Baidu",
 
+  // Options de recherche avancées
+  advancedOptions: "Options avancées",
+  selectEngines: "Sélectionner les moteurs de recherche",
+  selectAll: "Tout sélectionner",
+  deselectAll: "Tout désélectionner",
+  selectAtLeastOneEngine:
+    "Veuillez sélectionner au moins un moteur de recherche",
+  regionLanguage: "Région et langue",
+  region: "Région",
+  global: "Mondiale",
+  automatic: "Automatique",
+
   // Résultats
   resultsFor: "Résultats pour",
   visitLink: "Visiter",

@@ -7,7 +7,12 @@ const scoring = require("../scoring");
 // Route pour effectuer une recherche
 router.post("/search", async (req, res) => {
   try {
-    const { query } = req.body;
+    const {
+      query,
+      engines = [],
+      region = "global",
+      language = "auto",
+    } = req.body;
 
     if (!query || query.trim() === "") {
       return res
@@ -15,11 +20,25 @@ router.post("/search", async (req, res) => {
         .json({ error: "Le terme de recherche est requis" });
     }
 
-    // Sauvegarder la recherche dans la base de données
-    const searchId = await db.saveSearch(query);
+    if (engines.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "Au moins un moteur de recherche est requis" });
+    }
 
-    // Effectuer la recherche sur tous les moteurs
-    const results = await searchEngines.searchAllEngines(query);
+    // Sauvegarder la recherche dans la base de données avec les options
+    const searchId = await db.saveSearch(query, {
+      engines: engines.join(","),
+      region,
+      language,
+    });
+
+    // Effectuer la recherche uniquement sur les moteurs sélectionnés
+    const results = await searchEngines.searchAllEngines(query, {
+      engines,
+      region,
+      language,
+    });
 
     // Sauvegarder les résultats dans la base de données
     for (const engine in results) {
@@ -39,6 +58,11 @@ router.post("/search", async (req, res) => {
       searchId,
       query,
       results,
+      searchOptions: {
+        engines: engines.join(","),
+        region,
+        language,
+      },
     });
 
     // Retourner les résultats avec l'ID de recherche et les scores

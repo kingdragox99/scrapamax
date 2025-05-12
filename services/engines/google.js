@@ -8,97 +8,105 @@ puppeteer.use(StealthPlugin());
 /**
  * Recherche sur Google avec Puppeteer
  * @param {string} query - Le terme de recherche
+ * @param {Object} options - Options de recherche
+ * @param {string} options.region - Code de région pour la recherche
+ * @param {string} options.language - Code de langue pour la recherche
  * @returns {Promise<Array>} Tableau des résultats de recherche
  */
-async function searchGoogle(query) {
+async function searchGoogle(query, options = {}) {
+  const { region = "global", language = "auto" } = options;
+
   console.log(`\n🔍 Tentative de recherche Google pour: "${query}"`);
+  console.log(`📍 Région: ${region}, 🌐 Langue: ${language}`);
+
   let browser;
   try {
     browser = await utils.getBrowser();
     console.log("📝 Configuration de la page Google...");
     const page = await browser.newPage();
 
-    // Masquer la signature Puppeteer/WebDriver
-    await page.evaluateOnNewDocument(() => {
-      // Surcharge des méthodes de détection d'automatisation
-      Object.defineProperty(navigator, "webdriver", {
-        get: () => false,
-      });
-      // Supprimer les attributs de détection de Chrome
-      delete navigator.languages;
-      Object.defineProperty(navigator, "languages", {
-        get: () => ["fr-FR", "fr", "en-US", "en"],
-      });
-      // Simuler une plateforme non-headless
-      Object.defineProperty(navigator, "platform", {
-        get: () => "Win32",
-      });
-      // Masquer les fonctions de détection de Puppeteer
-      window.chrome = {
-        runtime: {},
-      };
-    });
-
-    // Configurer un user agent aléatoire mais réaliste
+    // Configurer un user agent aléatoire
     const userAgent = await utils.getUserAgent();
     await page.setUserAgent(userAgent);
     console.log(`🔒 User-Agent configuré: ${userAgent.substring(0, 50)}...`);
 
-    // Configurer des cookies pour éviter les bannières
-    await page.setCookie({
-      name: "CONSENT",
-      value: "YES+cb.20220301-11-p0.fr+FX+419",
-      domain: ".google.com",
-      path: "/",
-      expires: Date.now() / 1000 + 1000 * 24 * 60 * 60,
+    // Configurer les paramètres de géolocalisation et langue
+    await page.setExtraHTTPHeaders({
+      "Accept-Language":
+        language !== "auto"
+          ? `${language},en-US;q=0.9,en;q=0.8`
+          : "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
     });
 
-    console.log(`🖥️ Configuration de la taille d'écran aléatoire...`);
-    // Configurer des comportements aléatoires
-    await page.setViewport({
-      width: 1280 + Math.floor(Math.random() * 100),
-      height: 800 + Math.floor(Math.random() * 100),
-      deviceScaleFactor: 1,
-      hasTouch: false,
-      isLandscape: true,
-      isMobile: false,
-    });
+    // Configuration de la taille d'écran aléatoire
+    await utils.setupRandomScreenSize(page);
 
-    console.log(`🌐 Navigation vers Google...`);
-    // Naviguer vers Google et attendre que la page se charge - utiliser la version française et un nombre plus élevé de résultats
-    await page.goto(
-      `https://www.google.fr/search?hl=fr&q=${encodeURIComponent(
-        query
-      )}&num=30`,
-      {
-        waitUntil: "networkidle2",
-        timeout: 30000,
-      }
-    );
+    // Configuration anti-détection
+    await utils.setupBrowserAntiDetection(page);
+
+    // Construire l'URL avec les paramètres de région et langue si spécifiés
+    let googleUrl = `https://www.google.com/search?q=${encodeURIComponent(
+      query
+    )}`;
+
+    // Ajouter les paramètres de région si spécifiés et non globaux
+    if (region && region !== "global") {
+      const regionMappings = {
+        us: "US",
+        fr: "FR",
+        uk: "GB",
+        de: "DE",
+        es: "ES",
+        it: "IT",
+        ca: "CA",
+        jp: "JP",
+        br: "BR",
+      };
+
+      const countryCode = regionMappings[region] || region.toUpperCase();
+      googleUrl += `&gl=${countryCode}`;
+    }
+
+    // Ajouter les paramètres de langue si spécifiés et non automatiques
+    if (language && language !== "auto") {
+      googleUrl += `&hl=${language}`;
+    }
+
+    console.log(`🌐 Navigation vers Google avec les paramètres régionaux...`);
+    console.log(`🔗 URL: ${googleUrl}`);
+
+    // Naviguer vers Google et attendre que la page se charge
+    await page.goto(googleUrl, {
+      waitUntil: "networkidle2",
+    });
 
     console.log(`⏳ Attente après chargement de la page...`);
     // Petite pause pour éviter la détection
-    await utils.randomDelay(2000, 5000);
+    await utils.randomDelay(2000, 4000);
+
+    // Vérifier la présence d'un CAPTCHA
+    const hasCaptcha = await utils.handleCaptcha(page, "Google");
+    if (hasCaptcha) {
+      console.log(`✅ CAPTCHA résolu, reprise de la recherche Google...`);
+      await utils.randomDelay(2000, 3000);
+    }
 
     console.log(`🍪 Vérification des popups et consentements...`);
-    // Éviter les popups - plusieurs sélecteurs possibles
+    // Gérer les bannières de consentement
     try {
-      const selectors = [
-        'button[aria-label="Tout accepter"]',
-        'button[aria-label="Accepter tout"]',
-        'button[aria-label="J\'accepte"]',
-        'button[aria-label="Accepter"]',
-        "button.tHlp8d",
-        "button#L2AGLb",
-        '[aria-modal="true"] button + button', // Nouvelle approche pour cibler le second bouton
+      // Vérifier s'il y a une bannière de consentement
+      const consentSelectors = [
+        "button.tHlp8d", // Bouton "J'accepte" sur la bannière de consentement
+        "#L2AGLb", // Bouton "J'accepte" (nouvelle version)
+        "[aria-label='Accepter tout']", // Bouton par aria-label
+        "form:nth-child(2) > div > div > button", // Pattern communément utilisé
       ];
 
-      for (const selector of selectors) {
+      for (const selector of consentSelectors) {
         if (await page.$(selector)) {
           console.log(`🖱️ Popup détecté, clique sur ${selector}`);
           await page.click(selector);
-          // Attendre un moment après le clic
-          await page.waitForTimeout(2000);
+          await page.waitForTimeout(1500);
           break;
         }
       }
@@ -106,108 +114,60 @@ async function searchGoogle(query) {
       console.log("ℹ️ Pas de popup à fermer ou erreur:", e.message);
     }
 
-    // Vérifier si un CAPTCHA est présent et le faire résoudre par l'utilisateur si nécessaire
-    const captchaResolved = await utils.handleCaptcha(page, "Google");
-    if (captchaResolved) {
-      console.log("✅ CAPTCHA résolu, reprise de la recherche Google...");
-      // Attendre un peu après la résolution du CAPTCHA
-      await utils.randomDelay(2000, 4000);
-    }
+    console.log(`🔍 Vérification de la présence d'un CAPTCHA sur Google...`);
+    await utils.handleCaptcha(page, "Google");
 
     console.log(`🖱️ Simulation de scrolling pour paraître humain...`);
-    // Utiliser la nouvelle fonction humanScroll au lieu du scrolling précédent
+    // Ajouter un scrolling aléatoire
     await utils.humanScroll(page);
 
-    await utils.randomDelay(2000, 3000);
+    await utils.randomDelay(1000, 3000);
 
     console.log(`🔍 Extraction des résultats Google...`);
-    // Extraire les résultats avec une méthode plus directe qui fonctionne mieux sur Google
+    // Extraire les résultats
     const results = await page.evaluate(() => {
       console.log("Recherche des éléments dans la page Google...");
 
       const searchResults = [];
 
-      // Nouveaux sélecteurs mis à jour pour la structure actuelle de Google
+      // Plusieurs sélecteurs pour s'adapter aux changements de Google
       const selectors = [
-        // Structure principale actuelle de Google
+        // Structure principale
         {
-          container: "div.g, div[jscontroller]",
+          container: ".g",
           title: "h3",
           link: "a",
-          snippet: "div[data-snc], div.VwiC3b, div[data-sncf], div[style]",
+          snippet: ".VwiC3b, .st",
         },
-        // Autres dispositions possibles
+        // Structure alternative
+        {
+          container: ".Gx5Zad",
+          title: "h3",
+          link: "a",
+          snippet: ".lEBKkf, .s3v9rd, .yDYNvb",
+        },
+        // Structure encore plus récente
         {
           container: ".MjjYud",
           title: "h3",
-          link: "a[href]",
-          snippet: "div[data-sncf], div.VwiC3b, div[style]",
-        },
-        // Résultats commerciaux et autres formats
-        {
-          container: "div[jscontroller][data-sokoban-feature]",
-          title: "h3",
-          link: "a[ping], a[data-ved]",
-          snippet: "div[style], div[role='complementary'], div.a4bIc",
-        },
-        // Anciens sélecteurs pour compatibilité
-        {
-          container: "#search .g",
-          title: "h3",
           link: "a",
-          snippet: "div.VwiC3b",
+          snippet: "[data-sncf], [data-content-feature='1']",
         },
       ];
 
-      // Essayer chaque jeu de sélecteurs
+      // Essayer chaque ensemble de sélecteurs
       for (const selector of selectors) {
         const elements = document.querySelectorAll(selector.container);
-        console.log(
-          `Trouvé ${elements.length} éléments avec ${selector.container}`
-        );
 
         if (elements.length > 0) {
+          console.log(
+            `Trouvé ${elements.length} résultats avec le sélecteur ${selector.container}`
+          );
+
           elements.forEach((element) => {
             const titleElement = element.querySelector(selector.title);
-
-            // Trouver le lien en priorisant celui proche du titre
-            let linkElement = null;
-            if (titleElement) {
-              // Chercher d'abord dans le parent du titre
-              const titleParent = titleElement.parentElement;
-              if (titleParent) {
-                linkElement =
-                  titleParent.closest("a") ||
-                  titleParent.querySelector("a[href]");
-              }
-
-              // Si toujours pas trouvé, chercher dans l'élément parent du conteneur
-              if (!linkElement) {
-                linkElement =
-                  titleElement.closest("a") ||
-                  element.querySelector(selector.link);
-              }
-            } else {
-              // Pas de titre trouvé, chercher directement un lien
-              linkElement = element.querySelector("a[href]");
-            }
-
-            // Chercher le snippet avec plusieurs sélecteurs possibles
-            const snippetSelectors = Array.isArray(selector.snippet)
-              ? selector.snippet
-              : selector.snippet.split(", ");
-
-            let snippetElement = null;
-
-            for (const snippetSelector of snippetSelectors) {
-              snippetElement = element.querySelector(snippetSelector);
-              if (
-                snippetElement &&
-                snippetElement.textContent.trim().length > 10
-              ) {
-                break;
-              }
-            }
+            const linkElement = titleElement ? titleElement.closest("a") : null;
+            const snippetElement = element.querySelector(selector.snippet);
 
             // Vérification des conditions pour un résultat valide
             if (
@@ -234,65 +194,47 @@ async function searchGoogle(query) {
         }
       }
 
-      // Méthode de secours si aucun résultat n'est trouvé
+      // Si aucun résultat n'a été trouvé, essayer une méthode plus générique
       if (searchResults.length === 0) {
-        console.log("Utilisation de la méthode de secours pour Google");
+        console.log(
+          "Aucun résultat trouvé avec les sélecteurs standard, essai de méthode alternative..."
+        );
 
-        // Chercher tous les liens valides avec texte
-        document
-          .querySelectorAll('a[href^="http"]:not([href*="google.com/"])')
-          .forEach((link) => {
-            // Vérifier si le lien a un texte substantiel et ressemble à un titre
-            if (link.textContent && link.textContent.trim().length > 15) {
-              // Chercher un h3 proche, ou utiliser le texte du lien comme titre
-              const nearH3 = link.querySelector("h3") || link.closest("h3");
+        // Chercher tous les h3 (titres de résultats) dans la page
+        const allH3 = document.querySelectorAll("h3");
 
-              // Chercher un paragraphe ou div avec du texte à proximité pour la description
-              let description = "Pas de description disponible";
-              let parent = link.parentElement;
+        allH3.forEach((h3) => {
+          const link = h3.closest("a");
+          if (link && link.href && link.href.startsWith("http")) {
+            // Trouver un élément parent qui contient la description
+            let parentElement = h3.parentElement;
+            let maxDepth = 5; // Éviter de remonter trop haut dans l'arborescence
+            let description = "";
 
-              // Remonter jusqu'à 3 niveaux pour trouver une description
-              for (let i = 0; i < 3 && parent; i++) {
-                const possibleDesc =
-                  parent.querySelector("div:not(:has(a))") ||
-                  parent.querySelector("span:not(:has(a))") ||
-                  parent.querySelector("p");
-
-                if (
-                  possibleDesc &&
-                  possibleDesc.textContent.trim().length > 20
-                ) {
-                  description = possibleDesc.textContent
-                    .trim()
-                    .replace(/\s+/g, " ");
-                  break;
-                }
-                parent = parent.parentElement;
+            while (maxDepth-- > 0 && parentElement) {
+              // Chercher un paragraphe ou un div qui contient du texte
+              const descElement = parentElement.querySelector(
+                "div:not(:has(h3)), span:not(:has(h3)), p"
+              );
+              if (descElement && descElement.textContent.trim().length > 20) {
+                description = descElement.textContent
+                  .trim()
+                  .replace(/\s+/g, " ");
+                break;
               }
-
-              searchResults.push({
-                title: nearH3
-                  ? nearH3.textContent.trim()
-                  : link.textContent.trim(),
-                url: link.href,
-                description: description,
-              });
+              parentElement = parentElement.parentElement;
             }
-          });
+
+            searchResults.push({
+              title: h3.textContent.trim(),
+              url: link.href,
+              description: description || "Pas de description disponible",
+            });
+          }
+        });
       }
 
-      // Limiter à 20 résultats uniques par URL
-      const uniqueResults = [];
-      const seenUrls = new Set();
-
-      for (const result of searchResults) {
-        if (!seenUrls.has(result.url) && uniqueResults.length < 20) {
-          seenUrls.add(result.url);
-          uniqueResults.push(result);
-        }
-      }
-
-      return uniqueResults;
+      return searchResults.slice(0, 20); // Limiter à 20 résultats
     });
 
     console.log(

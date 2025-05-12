@@ -12,6 +12,65 @@ document.addEventListener("DOMContentLoaded", () => {
   const tabButtons = document.querySelectorAll(".tab-button");
   const mainTabButtons = document.querySelectorAll(".main-tab-button");
 
+  // Éléments pour les options de recherche avancées
+  const advancedSearchButton = document.getElementById(
+    "advanced-search-button"
+  );
+  const advancedSearchModal = document.getElementById("advanced-search-modal");
+  const closeModalButton = document.querySelector(".close-modal");
+  const applyAdvancedOptionsButton = document.getElementById(
+    "apply-advanced-options"
+  );
+  const selectAllEnginesButton = document.getElementById("select-all-engines");
+  const deselectAllEnginesButton = document.getElementById(
+    "deselect-all-engines"
+  );
+  const engineCheckboxes = document.querySelectorAll('input[name="engines"]');
+  const regionSelect = document.getElementById("region");
+  const languageSelect = document.getElementById("search-language");
+
+  // Afficher/Cacher la modale des options de recherche avancées
+  if (advancedSearchButton) {
+    advancedSearchButton.addEventListener("click", () => {
+      advancedSearchModal.style.display = "block";
+    });
+  }
+
+  // Fermer la modale en cliquant sur le X
+  if (closeModalButton) {
+    closeModalButton.addEventListener("click", () => {
+      advancedSearchModal.style.display = "none";
+    });
+  }
+
+  // Fermer la modale en cliquant en dehors de son contenu
+  window.addEventListener("click", (event) => {
+    if (event.target === advancedSearchModal) {
+      advancedSearchModal.style.display = "none";
+    }
+  });
+
+  // Appliquer les options et fermer la modale
+  if (applyAdvancedOptionsButton) {
+    applyAdvancedOptionsButton.addEventListener("click", () => {
+      advancedSearchModal.style.display = "none";
+    });
+  }
+
+  // Sélectionner tous les moteurs
+  selectAllEnginesButton.addEventListener("click", () => {
+    engineCheckboxes.forEach((checkbox) => {
+      checkbox.checked = true;
+    });
+  });
+
+  // Désélectionner tous les moteurs
+  deselectAllEnginesButton.addEventListener("click", () => {
+    engineCheckboxes.forEach((checkbox) => {
+      checkbox.checked = false;
+    });
+  });
+
   // Gestion des onglets principaux
   mainTabButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -56,19 +115,42 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Vérifier qu'au moins un moteur est sélectionné
+    const selectedEngines = Array.from(engineCheckboxes)
+      .filter((checkbox) => checkbox.checked)
+      .map((checkbox) => checkbox.value);
+
+    if (selectedEngines.length === 0) {
+      alert(
+        window.t
+          ? window.t("selectAtLeastOneEngine")
+          : "Veuillez sélectionner au moins un moteur de recherche"
+      );
+      return;
+    }
+
+    // Récupérer les options de région et langue
+    const region = regionSelect.value;
+    const language = languageSelect.value;
+
     // Afficher l'indicateur de chargement
     loadingIndicator.classList.remove("hidden");
     searchButton.disabled = true;
     resultsContainer.classList.add("hidden");
 
     try {
-      // Envoyer la requête au serveur
+      // Envoyer la requête au serveur avec les options avancées
       const response = await fetch("/api/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({
+          query,
+          engines: selectedEngines,
+          region,
+          language,
+        }),
       });
 
       if (!response.ok) {
@@ -173,6 +255,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // Réinitialiser l'onglet actif
     tabButtons.forEach((btn) => btn.classList.remove("active"));
     document.querySelector('[data-engine="all"]').classList.add("active");
+
+    // Mettre à jour les onglets de moteur pour n'afficher que les moteurs utilisés
+    updateEnginesTabs(Object.keys(data.results));
+  }
+
+  // Fonction pour mettre à jour les onglets de moteurs en fonction des moteurs utilisés
+  function updateEnginesTabs(usedEngines) {
+    tabButtons.forEach((button) => {
+      const engine = button.dataset.engine;
+      if (engine === "all") return; // Toujours afficher l'onglet "Tous"
+
+      if (usedEngines.includes(engine)) {
+        button.style.display = "block";
+      } else {
+        button.style.display = "none";
+      }
+    });
   }
 
   // Fonction pour créer un élément de résultat scoré
@@ -445,7 +544,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Fonction pour charger les résultats d'une recherche précédente
+  // Fonction pour charger les résultats d'une recherche spécifique de l'historique
   async function loadResults(searchId) {
     // Afficher l'indicateur de chargement
     loadingIndicator.classList.remove("hidden");
@@ -487,7 +586,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Fonction pour supprimer une recherche
+  // Fonction pour supprimer une recherche de l'historique
   async function deleteSearch(searchId) {
     const confirmMessage = window.t
       ? window.t("confirmDelete")

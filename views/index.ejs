@@ -35,6 +35,14 @@
                 placeholder="<%= t('searchPlaceholder') %>"
                 required
               />
+              <button
+                type="button"
+                id="advanced-search-button"
+                class="advanced-button"
+                title="<%= t('advancedOptions') %>"
+              >
+                <span class="advanced-icon">⚙️</span>
+              </button>
               <button type="submit" id="search-button">
                 <%= t('searchButton') %>
               </button>
@@ -45,6 +53,144 @@
             <p><%= t('loading') %></p>
           </div>
         </section>
+
+        <!-- Modale pour les options de recherche avancées -->
+        <div id="advanced-search-modal" class="modal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2><%= t('advancedOptions') %></h2>
+              <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+              <div class="search-engines-options">
+                <h3><%= t('selectEngines') %></h3>
+                <div class="engines-grid">
+                  <label class="engine-checkbox">
+                    <input
+                      type="checkbox"
+                      name="engines"
+                      value="google"
+                      checked
+                    />
+                    Google
+                  </label>
+                  <label class="engine-checkbox">
+                    <input
+                      type="checkbox"
+                      name="engines"
+                      value="bing"
+                      checked
+                    />
+                    Bing
+                  </label>
+                  <label class="engine-checkbox">
+                    <input
+                      type="checkbox"
+                      name="engines"
+                      value="duckduckgo"
+                      checked
+                    />
+                    DuckDuckGo
+                  </label>
+                  <label class="engine-checkbox">
+                    <input
+                      type="checkbox"
+                      name="engines"
+                      value="yandex"
+                      checked
+                    />
+                    Yandex
+                  </label>
+                  <label class="engine-checkbox">
+                    <input
+                      type="checkbox"
+                      name="engines"
+                      value="ecosia"
+                      checked
+                    />
+                    Ecosia
+                  </label>
+                  <label class="engine-checkbox">
+                    <input
+                      type="checkbox"
+                      name="engines"
+                      value="brave"
+                      checked
+                    />
+                    Brave
+                  </label>
+                  <label class="engine-checkbox">
+                    <input
+                      type="checkbox"
+                      name="engines"
+                      value="baidu"
+                      checked
+                    />
+                    Baidu
+                  </label>
+                </div>
+                <div class="engine-buttons">
+                  <button type="button" id="select-all-engines">
+                    <%= t('selectAll') %>
+                  </button>
+                  <button type="button" id="deselect-all-engines">
+                    <%= t('deselectAll') %>
+                  </button>
+                </div>
+              </div>
+
+              <div class="region-options">
+                <h3><%= t('regionLanguage') %></h3>
+                <div class="region-selects">
+                  <div class="select-group">
+                    <label for="region"><%= t('region') %>:</label>
+                    <select id="region" name="region">
+                      <option value="global" selected>
+                        <%= t('global') %>
+                      </option>
+                      <option value="us">United States</option>
+                      <option value="fr">France</option>
+                      <option value="uk">United Kingdom</option>
+                      <option value="de">Germany</option>
+                      <option value="es">Spain</option>
+                      <option value="it">Italy</option>
+                      <option value="ca">Canada</option>
+                      <option value="jp">Japan</option>
+                      <option value="br">Brazil</option>
+                    </select>
+                  </div>
+
+                  <div class="select-group">
+                    <label for="search-language"><%= t('language') %>:</label>
+                    <select id="search-language" name="search-language">
+                      <option value="auto" selected>
+                        <%= t('automatic') %>
+                      </option>
+                      <option value="en">English</option>
+                      <option value="fr">Français</option>
+                      <option value="es">Español</option>
+                      <option value="de">Deutsch</option>
+                      <option value="it">Italiano</option>
+                      <option value="pt">Português</option>
+                      <option value="ja">日本語</option>
+                      <option value="ru">Русский</option>
+                      <option value="zh">中文</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                id="apply-advanced-options"
+                class="modal-button"
+              >
+                <%= t('apply') %>
+              </button>
+            </div>
+          </div>
+        </div>
 
         <!-- Navigation principale -->
         <div class="main-tabs">

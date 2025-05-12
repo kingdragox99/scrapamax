@@ -4,6 +4,9 @@ const path = require("path");
 const dbPath = path.join(__dirname, "data.db");
 const db = new sqlite3.Database(dbPath);
 
+/**
+ * Initialise la base de données et applique les migrations nécessaires
+ */
 function initDatabase() {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
@@ -38,22 +41,101 @@ function initDatabase() {
             reject(err);
             return;
           }
-          resolve();
+
+          // Appliquer les migrations pour ajouter les nouvelles colonnes
+          migrateDatabase()
+            .then(() => {
+              resolve();
+            })
+            .catch((err) => {
+              reject(err);
+            });
         }
       );
     });
   });
 }
 
-function saveSearch(query) {
+/**
+ * Vérifie et ajoute les colonnes manquantes dans la base de données
+ */
+function migrateDatabase() {
   return new Promise((resolve, reject) => {
-    db.run("INSERT INTO searches (query) VALUES (?)", [query], function (err) {
+    // Vérifier si les colonnes existent déjà
+    db.get("PRAGMA table_info(searches)", (err, rows) => {
       if (err) {
         reject(err);
         return;
       }
-      resolve(this.lastID);
+
+      // Exécuter les migrations dans une transaction
+      db.run("BEGIN TRANSACTION", (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        // Ajouter la colonne engines si elle n'existe pas
+        db.run(
+          "ALTER TABLE searches ADD COLUMN engines TEXT DEFAULT 'google,bing,duckduckgo,yandex,ecosia,brave,baidu'",
+          (err) => {
+            // Ignorer l'erreur si la colonne existe déjà
+            console.log("Migration: ajout de la colonne engines");
+
+            // Ajouter la colonne region si elle n'existe pas
+            db.run(
+              "ALTER TABLE searches ADD COLUMN region TEXT DEFAULT 'global'",
+              (err) => {
+                // Ignorer l'erreur si la colonne existe déjà
+                console.log("Migration: ajout de la colonne region");
+
+                // Ajouter la colonne language si elle n'existe pas
+                db.run(
+                  "ALTER TABLE searches ADD COLUMN language TEXT DEFAULT 'auto'",
+                  (err) => {
+                    // Ignorer l'erreur si la colonne existe déjà
+                    console.log("Migration: ajout de la colonne language");
+
+                    // Terminer la transaction
+                    db.run("COMMIT", (err) => {
+                      if (err) {
+                        db.run("ROLLBACK");
+                        reject(err);
+                        return;
+                      }
+                      console.log("✅ Migration de la base de données réussie");
+                      resolve();
+                    });
+                  }
+                );
+              }
+            );
+          }
+        );
+      });
     });
+  });
+}
+
+function saveSearch(query, options = {}) {
+  const {
+    engines = "google,bing,duckduckgo,yandex,ecosia,brave,baidu",
+    region = "global",
+    language = "auto",
+  } = options;
+
+  return new Promise((resolve, reject) => {
+    db.run(
+      "INSERT INTO searches (query, engines, region, language) VALUES (?, ?, ?, ?)",
+      [query, engines, region, language],
+      function (err) {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(this.lastID);
+      }
+    );
   });
 }
 
@@ -77,7 +159,7 @@ function getSearchHistory() {
   return new Promise((resolve, reject) => {
     db.all(
       `
-      SELECT s.id, s.query, s.date, COUNT(r.id) as resultCount
+      SELECT s.id, s.query, s.engines, s.region, s.language, s.date, COUNT(r.id) as resultCount
       FROM searches s
       LEFT JOIN results r ON s.id = r.search_id
       GROUP BY s.id
@@ -99,7 +181,7 @@ function getSearchResults(searchId) {
   return new Promise((resolve, reject) => {
     db.all(
       `
-      SELECT r.*, s.query
+      SELECT r.*, s.query, s.engines, s.region, s.language
       FROM results r
       JOIN searches s ON r.search_id = s.id
       WHERE r.search_id = ?
