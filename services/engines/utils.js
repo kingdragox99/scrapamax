@@ -155,6 +155,117 @@ function decodeDuckDuckGoUrl(url) {
 }
 
 /**
+ * Décode les URLs de redirection de Baidu
+ * @param {string} url - URL de redirection Baidu
+ * @param {Page} page - Instance de page Puppeteer (optionnel)
+ * @returns {Promise<string>} URL décodée
+ */
+async function decodeBaiduUrl(url, page = null) {
+  // Vérifier si c'est une URL de redirection Baidu
+  if (
+    url &&
+    (url.includes("baidu.com/link?") || url.includes("baidu.com/url?"))
+  ) {
+    try {
+      // Si une page est fournie, utiliser cette page pour suivre la redirection
+      if (page) {
+        // Stocker l'URL courante
+        const currentUrl = page.url();
+
+        // Créer un événement pour capturer la redirection
+        let realUrl = null;
+        const client = await page.target().createCDPSession();
+        await client.send("Network.enable");
+
+        client.on("Network.requestWillBeSent", (event) => {
+          // Ignorer les requêtes vers Baidu
+          if (
+            event.request.url &&
+            !event.request.url.includes("baidu.com") &&
+            event.request.url.startsWith("http")
+          ) {
+            realUrl = event.request.url;
+          }
+        });
+
+        // Naviguer vers l'URL de redirection
+        await page
+          .goto(url, { waitUntil: "domcontentloaded", timeout: 10000 })
+          .catch(() => {});
+
+        // Attendre un peu pour la redirection
+        await new Promise((r) => setTimeout(r, 2000));
+
+        // Retourner à l'URL originale
+        await page
+          .goto(currentUrl, { waitUntil: "domcontentloaded" })
+          .catch(() => {});
+
+        // Si on a capturé une URL réelle
+        if (realUrl) {
+          console.log(`🔄 URL Baidu décodée: ${url} -> ${realUrl}`);
+          return realUrl;
+        }
+      }
+
+      // Méthode alternative: extraire le paramètre url de l'URL Baidu
+      const urlObj = new URL(url);
+      const redirectUrl = urlObj.searchParams.get("url");
+      if (redirectUrl) {
+        return redirectUrl;
+      }
+    } catch (e) {
+      console.log(`⚠️ Erreur lors du décodage de l'URL Baidu: ${e.message}`);
+    }
+  }
+
+  // Si ce n'est pas une URL de redirection ou s'il y a une erreur, retourner l'URL originale
+  return url;
+}
+
+/**
+ * Décode les URLs de redirection de Bing
+ * @param {string} url - URL de redirection Bing
+ * @returns {string} URL décodée
+ */
+function decodeBingUrl(url) {
+  // Vérifier si c'est une URL de redirection Bing
+  if (url && url.includes("bing.com/ck/")) {
+    try {
+      // L'URL réelle est encodée en Base64 dans le paramètre 'u'
+      const match = url.match(/[?&]u=([^&]+)/);
+      if (match && match[1]) {
+        // Décoder la partie Base64
+        let encodedUrl = match[1];
+
+        // Pour Bing, le format est souvent 'a1' suivi de l'URL encodée en Base64
+        if (encodedUrl.startsWith("a1")) {
+          encodedUrl = encodedUrl.substring(2);
+        }
+
+        try {
+          // Décoder l'URL en Base64
+          const decodedUrl = Buffer.from(encodedUrl, "base64").toString(
+            "utf-8"
+          );
+          if (decodedUrl && decodedUrl.startsWith("http")) {
+            console.log(`🔄 URL Bing décodée: ${url} -> ${decodedUrl}`);
+            return decodedUrl;
+          }
+        } catch (e) {
+          console.log(`⚠️ Erreur lors du décodage Base64: ${e.message}`);
+        }
+      }
+    } catch (e) {
+      console.log(`⚠️ Erreur lors du décodage de l'URL Bing: ${e.message}`);
+    }
+  }
+
+  // Si ce n'est pas une URL de redirection ou s'il y a une erreur, retourner l'URL originale
+  return url;
+}
+
+/**
  * Effectue un défilement aléatoire et naturel sur la page
  * @param {Page} page - L'instance de page Puppeteer
  * @returns {Promise<void>}
@@ -200,12 +311,198 @@ async function humanScroll(page) {
   await randomDelay(1000, 2000);
 }
 
+/**
+ * Détecte et gère les CAPTCHA avec intervention de l'utilisateur
+ * @param {Page} page - L'instance de page Puppeteer
+ * @param {string} engineName - Nom du moteur de recherche pour les logs
+ * @returns {Promise<boolean>} True si un CAPTCHA a été détecté et résolu
+ */
+async function handleCaptcha(page, engineName) {
+  console.log(
+    `🔍 Vérification de la présence d'un CAPTCHA sur ${engineName}...`
+  );
+
+  // Sélecteurs pour différents types de CAPTCHA
+  const captchaSelectors = {
+    brave: [
+      'button:contains("I\'m not a robot")',
+      'button:contains("Je ne suis pas un robot")',
+      ".captcha",
+      '[aria-label="Captcha"]',
+    ],
+    google: ["#captcha", ".g-recaptcha", 'iframe[src*="recaptcha"]'],
+    general: [
+      "#captcha",
+      ".captcha",
+      'iframe[src*="captcha"]',
+      'iframe[src*="recaptcha"]',
+    ],
+  };
+
+  // Combiner les sélecteurs spécifiques au moteur et généraux
+  const selectors = [
+    ...(captchaSelectors[engineName.toLowerCase()] || []),
+    ...captchaSelectors.general,
+  ];
+
+  // Vérifier si un CAPTCHA est présent
+  const captchaDetected = await page.evaluate((selectors) => {
+    // Fonction pour vérifier si un élément contient un texte spécifique
+    const containsText = (element, text) => {
+      return element && element.innerText && element.innerText.includes(text);
+    };
+
+    // Chercher des éléments qui correspondent aux sélecteurs
+    for (const selector of selectors) {
+      if (selector.includes(':contains("')) {
+        // Traitement spécial pour les sélecteurs avec le pseudo-sélecteur :contains()
+        const plainSelector = selector.split(":contains(")[0];
+        const searchText = selector.match(/:contains\("(.+?)"\)/)[1];
+
+        const elements = document.querySelectorAll(plainSelector);
+        for (const el of elements) {
+          if (containsText(el, searchText)) {
+            return {
+              found: true,
+              selector: selector,
+              text: el.innerText,
+            };
+          }
+        }
+      } else {
+        // Sélecteurs CSS standard
+        const elements = document.querySelectorAll(selector);
+        if (elements.length > 0) {
+          return {
+            found: true,
+            selector: selector,
+            count: elements.length,
+          };
+        }
+      }
+    }
+
+    // Vérifier également le titre et le contenu de la page pour des indications de CAPTCHA
+    const pageTitle = document.title.toLowerCase();
+    const bodyText = document.body.innerText.toLowerCase();
+
+    if (
+      pageTitle.includes("captcha") ||
+      pageTitle.includes("robot") ||
+      pageTitle.includes("verification") ||
+      bodyText.includes("confirm you're a human") ||
+      bodyText.includes("confirmer que vous êtes humain")
+    ) {
+      return {
+        found: true,
+        method: "text detection",
+        title: document.title,
+      };
+    }
+
+    return { found: false };
+  }, selectors);
+
+  // Si un CAPTCHA est détecté
+  if (captchaDetected.found) {
+    console.log(`⚠️ CAPTCHA détecté sur ${engineName}:`, captchaDetected);
+
+    // Prendre une capture d'écran du CAPTCHA
+    const screenshotPath = `${engineName.toLowerCase()}-captcha.png`;
+    await page.screenshot({ path: screenshotPath });
+    console.log(`📸 Capture d'écran du CAPTCHA sauvegardée: ${screenshotPath}`);
+
+    // Configurer le navigateur pour être visible (non-headless)
+    console.log(
+      `🔄 Rechargement de la page en mode visible pour résolution manuelle...`
+    );
+    const context = page.browser().defaultBrowserContext();
+
+    // Ouvrir une nouvelle page visible pour l'intervention de l'utilisateur
+    const browser = await puppeteer.launch({
+      headless: false, // Mode non-headless pour permettre l'interaction
+      args: ["--start-maximized", "--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const visiblePage = await browser.newPage();
+    await visiblePage.setViewport({ width: 1280, height: 800 });
+
+    // Aller sur la même URL
+    const currentUrl = page.url();
+    await visiblePage.goto(currentUrl, { waitUntil: "domcontentloaded" });
+
+    // Afficher un message à l'utilisateur
+    await visiblePage.evaluate(() => {
+      const div = document.createElement("div");
+      div.id = "captcha-notification";
+      div.style.position = "fixed";
+      div.style.top = "0";
+      div.style.left = "0";
+      div.style.right = "0";
+      div.style.backgroundColor = "rgba(255, 0, 0, 0.8)";
+      div.style.color = "white";
+      div.style.padding = "20px";
+      div.style.textAlign = "center";
+      div.style.zIndex = "9999";
+      div.style.fontSize = "18px";
+      div.style.fontWeight = "bold";
+      div.innerHTML = `
+        CAPTCHA détecté! Veuillez résoudre le CAPTCHA.<br>
+        Une fois résolu, cliquez sur le bouton ci-dessous pour continuer la recherche.<br>
+        <button id="captcha-solved" style="
+          background-color: white;
+          color: black;
+          padding: 10px 20px;
+          margin-top: 10px;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-weight: bold;
+        ">J'ai résolu le CAPTCHA</button>
+      `;
+      document.body.appendChild(div);
+
+      // Ajouter un gestionnaire d'événements pour le bouton
+      document
+        .getElementById("captcha-solved")
+        .addEventListener("click", () => {
+          div.style.backgroundColor = "rgba(0, 128, 0, 0.8)";
+          div.innerHTML = "Merci! La recherche va continuer...";
+          setTimeout(() => {
+            window.close();
+          }, 2000);
+        });
+    });
+
+    // Attendre que l'utilisateur résolve le CAPTCHA et ferme la fenêtre
+    console.log(
+      `⏳ En attente de la résolution du CAPTCHA par l'utilisateur...`
+    );
+    await new Promise((resolve) => {
+      browser.on("disconnected", resolve);
+    });
+
+    console.log(`✅ CAPTCHA résolu par l'utilisateur!`);
+
+    // Continuer avec la page originale
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await randomDelay(2000, 3000);
+
+    return true;
+  }
+
+  return false;
+}
+
 module.exports = {
   getBrowser,
   randomDelay,
   getUserAgent,
   decodeDuckDuckGoUrl,
+  decodeBaiduUrl,
+  decodeBingUrl,
   humanScroll,
   setupBrowserAntiDetection,
   setupRandomScreenSize,
+  handleCaptcha,
 };

@@ -106,6 +106,14 @@ async function searchGoogle(query) {
       console.log("ℹ️ Pas de popup à fermer ou erreur:", e.message);
     }
 
+    // Vérifier si un CAPTCHA est présent et le faire résoudre par l'utilisateur si nécessaire
+    const captchaResolved = await utils.handleCaptcha(page, "Google");
+    if (captchaResolved) {
+      console.log("✅ CAPTCHA résolu, reprise de la recherche Google...");
+      // Attendre un peu après la résolution du CAPTCHA
+      await utils.randomDelay(2000, 4000);
+    }
+
     console.log(`🖱️ Simulation de scrolling pour paraître humain...`);
     // Utiliser la nouvelle fonction humanScroll au lieu du scrolling précédent
     await utils.humanScroll(page);

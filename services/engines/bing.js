@@ -94,6 +94,12 @@ async function searchBing(query) {
       return searchResults;
     });
 
+    console.log(`🔗 Décodage des URLs de redirection Bing...`);
+    // Décoder les URLs de redirection Bing
+    for (const result of results) {
+      result.url = utils.decodeBingUrl(result.url);
+    }
+
     console.log(`🏁 Extraction terminée, ${results.length} résultats trouvés`);
     await browser.close();
 
