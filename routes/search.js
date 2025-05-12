@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../database");
 const searchEngines = require("../services/searchEngines");
+const scoring = require("../scoring");
 
 // Route pour effectuer une recherche
 router.post("/search", async (req, res) => {
@@ -33,12 +34,15 @@ router.post("/search", async (req, res) => {
       }
     }
 
-    // Retourner les résultats avec l'ID de recherche
-    return res.json({
+    // Appliquer le scoring aux résultats
+    const scoredData = scoring.processSearchResults({
       searchId,
       query,
       results,
     });
+
+    // Retourner les résultats avec l'ID de recherche et les scores
+    return res.json(scoredData);
   } catch (error) {
     console.error("Erreur lors de la recherche:", error);
     return res
@@ -85,11 +89,14 @@ router.get("/results/:searchId", async (req, res) => {
       });
     });
 
-    return res.json({
+    // Appliquer le scoring aux résultats
+    const scoredData = scoring.processSearchResults({
       searchId,
       query: searchQuery,
       results: organizedResults,
     });
+
+    return res.json(scoredData);
   } catch (error) {
     console.error("Erreur lors de la récupération des résultats:", error);
     return res.status(500).json({ error: "Erreur serveur" });

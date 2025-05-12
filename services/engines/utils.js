@@ -40,6 +40,51 @@ async function getBrowser() {
 }
 
 /**
+ * Configure les protections anti-détection sur la page
+ * @param {Page} page - L'instance de page Puppeteer
+ * @returns {Promise<void>}
+ */
+async function setupBrowserAntiDetection(page) {
+  await page.evaluateOnNewDocument(() => {
+    // Surcharge des méthodes de détection d'automatisation
+    Object.defineProperty(navigator, "webdriver", {
+      get: () => false,
+    });
+    // Supprimer les attributs de détection de Chrome
+    delete navigator.languages;
+    Object.defineProperty(navigator, "languages", {
+      get: () => ["fr-FR", "fr", "en-US", "en"],
+    });
+    // Simuler une plateforme non-headless
+    Object.defineProperty(navigator, "platform", {
+      get: () => "Win32",
+    });
+    // Masquer les fonctions de détection de Puppeteer
+    window.chrome = {
+      runtime: {},
+    };
+  });
+}
+
+/**
+ * Configure une taille d'écran aléatoire pour simuler un comportement humain
+ * @param {Page} page - L'instance de page Puppeteer
+ * @returns {Promise<void>}
+ */
+async function setupRandomScreenSize(page) {
+  console.log(`🖥️ Configuration de la taille d'écran aléatoire...`);
+  // Configurer des comportements aléatoires
+  await page.setViewport({
+    width: 1280 + Math.floor(Math.random() * 100),
+    height: 800 + Math.floor(Math.random() * 100),
+    deviceScaleFactor: 1,
+    hasTouch: false,
+    isLandscape: true,
+    isMobile: false,
+  });
+}
+
+/**
  * Génère une pause aléatoire pour simuler un comportement humain
  * @param {number} min - Délai minimum en ms
  * @param {number} max - Délai maximum en ms
@@ -161,4 +206,6 @@ module.exports = {
   getUserAgent,
   decodeDuckDuckGoUrl,
   humanScroll,
+  setupBrowserAntiDetection,
+  setupRandomScreenSize,
 };

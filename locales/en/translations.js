@@ -19,11 +19,17 @@ module.exports = {
   duckduckgo: "DuckDuckGo",
   yandex: "Yandex",
   ecosia: "Ecosia",
+  brave: "Brave",
+  baidu: "Baidu",
 
   // Results
   resultsFor: "Results for",
   visitLink: "Visit",
   resultsLabel: "results",
+  uniqueResults: "unique results found",
+  scoreExplanation:
+    "Score based on number of search engines that found this result (1.0 to 5.0)",
+  scoreTooltip: "1.0: Single engine, 5.0: All engines",
 
   // History
   searchHistory: "Search History",

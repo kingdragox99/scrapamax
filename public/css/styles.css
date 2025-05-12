@@ -482,3 +482,126 @@ footer {
 .visit-button:hover {
   background-color: var(--primary-dark);
 }
+
+/* Styles pour les résultats avec scoring */
+.total-results-info {
+  margin-bottom: 20px;
+  padding: 10px 15px;
+  background-color: var(--dark-bg-secondary);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  color: var(--text-color);
+  border-left: 3px solid var(--primary-color);
+}
+
+.result-meta-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 5px;
+}
+
+.result-score {
+  display: inline-block;
+  width: 45px; /* Un peu plus large pour s'adapter aux décimales */
+  height: 45px;
+  line-height: 45px;
+  text-align: center;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 0.85rem;
+  color: white;
+  position: relative;
+  cursor: help; /* Indique qu'il y a un tooltip */
+  transition: transform 0.2s;
+}
+
+.result-score:hover {
+  transform: scale(1.1);
+}
+
+.score-high {
+  background-color: #4caf50; /* Vert pour 4-5 moteurs */
+}
+
+.score-medium {
+  background-color: #ff9800; /* Orange pour 2-3 moteurs */
+}
+
+.score-low {
+  background-color: #f44336; /* Rouge pour 1 moteur */
+}
+
+.result-engines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.engine-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background-color: var(--card-bg);
+}
+
+.engine-google {
+  color: #4285f4;
+  border: 1px solid #4285f4;
+}
+
+.engine-bing {
+  color: #00a4ef;
+  border: 1px solid #00a4ef;
+}
+
+.engine-duckduckgo {
+  color: #de5833;
+  border: 1px solid #de5833;
+}
+
+.engine-yandex {
+  color: #fc3f1d;
+  border: 1px solid #fc3f1d;
+}
+
+.engine-ecosia {
+  color: #4caf50;
+  border: 1px solid #4caf50;
+}
+
+.engine-brave {
+  color: #FB542B;
+  border: 1px solid #FB542B;
+}
+
+.engine-baidu {
+  color: #3388FF;
+  border: 1px solid #3388FF;
+}
+
+.scored-result {
+  border-left-width: 4px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.scored-result:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Adapte la disposition pour les petits écrans */
+@media (max-width: 768px) {
+  .result-meta-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .result-engines {
+    margin-left: 0;
+  }
+}

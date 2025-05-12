@@ -126,12 +126,15 @@ document.addEventListener("DOMContentLoaded", () => {
     resultsContainer.classList.remove("hidden");
     resultsList.innerHTML = "";
 
-    const { results } = data;
+    // Stocker les moteurs utilisés pour cette recherche
+    window.allSearchEngines = data.results;
 
-    // Vérifier s'il y a des résultats
-    const hasResults = Object.values(results).some(
-      (engineResults) => engineResults.length > 0
-    );
+    // Utiliser les résultats scorés si disponibles, sinon utiliser les résultats par moteur
+    const hasResults = data.scoredResults
+      ? data.scoredResults.length > 0
+      : Object.values(data.results).some(
+          (engineResults) => engineResults.length > 0
+        );
 
     if (!hasResults) {
       resultsList.innerHTML = `<p class="no-results">${
@@ -142,12 +145,29 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Afficher tous les résultats d'abord
-    for (const engine in results) {
-      results[engine].forEach((result) => {
-        const resultItem = createResultItem(result, engine);
+    // Afficher les résultats scorés s'ils sont disponibles
+    if (data.scoredResults && data.scoredResults.length > 0) {
+      // Créer un élément pour le nombre total de résultats uniques
+      const totalResultsInfo = document.createElement("div");
+      totalResultsInfo.className = "total-results-info";
+      totalResultsInfo.textContent = window.t
+        ? `${data.totalUniqueResults} ${window.t("uniqueResults")}`
+        : `${data.totalUniqueResults} résultats uniques trouvés`;
+      resultsList.appendChild(totalResultsInfo);
+
+      // Afficher tous les résultats scorés
+      data.scoredResults.forEach((result) => {
+        const resultItem = createScoredResultItem(result);
         resultsList.appendChild(resultItem);
       });
+    } else {
+      // Ancien affichage (par moteur) si scoredResults n'est pas disponible
+      for (const engine in data.results) {
+        data.results[engine].forEach((result) => {
+          const resultItem = createResultItem(result, engine);
+          resultsList.appendChild(resultItem);
+        });
+      }
     }
 
     // Réinitialiser l'onglet actif
@@ -155,7 +175,111 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelector('[data-engine="all"]').classList.add("active");
   }
 
-  // Fonction pour créer un élément de résultat
+  // Fonction pour créer un élément de résultat scoré
+  function createScoredResultItem(result) {
+    const resultItem = document.createElement("div");
+    resultItem.className = "result-item scored-result";
+    resultItem.dataset.engines = result.engines.join(",");
+
+    // Création du badge de score avec tooltip
+    const scoreLabel = document.createElement("div");
+    scoreLabel.className = "result-score";
+    scoreLabel.title = window.t
+      ? `${window.t("scoreTooltip")} - ${result.rawScore}/${
+          Object.keys(window.allSearchEngines).length
+        } moteurs`
+      : `Score de 1.0 a 5.0 - ${result.rawScore}/${
+          Object.keys(window.allSearchEngines).length
+        } moteurs`;
+
+    // Déterminer la classe de score en fonction de la valeur (1.0 à 5.0)
+    let scoreClass = "";
+    if (result.score >= 4.0) {
+      scoreClass = "score-high"; // 4.0-5.0
+    } else if (result.score >= 2.0) {
+      scoreClass = "score-medium"; // 2.0-3.9
+    } else {
+      scoreClass = "score-low"; // 1.0-1.9
+    }
+
+    scoreLabel.classList.add(scoreClass);
+    scoreLabel.textContent = `${result.score}`;
+
+    // Afficher les moteurs qui ont trouvé ce résultat
+    const enginesLabel = document.createElement("div");
+    enginesLabel.className = "result-engines";
+
+    // Afficher le nombre de moteurs ayant trouvé ce résultat (max 5)
+    const enginesCount = document.createElement("span");
+    enginesCount.className = "engines-count";
+
+    // Récupérer le nombre total de moteurs disponibles
+    const totalEnginesCount = Object.keys(
+      window.allSearchEngines || {
+        google: true,
+        bing: true,
+        duckduckgo: true,
+        yandex: true,
+        ecosia: true,
+      }
+    ).length;
+
+    // Limiter le affichage au nombre total de moteurs
+    enginesCount.textContent = `${Math.min(
+      result.rawScore,
+      totalEnginesCount
+    )}/${totalEnginesCount}`;
+    enginesLabel.appendChild(enginesCount);
+
+    // Dédupliquer les moteurs avant de créer les badges
+    const uniqueEngines = [...new Set(result.engines)];
+
+    uniqueEngines.forEach((engine) => {
+      const engineBadge = document.createElement("span");
+      engineBadge.className = `engine-badge engine-${engine}`;
+      engineBadge.textContent =
+        engine.charAt(0).toUpperCase() + engine.slice(1);
+      enginesLabel.appendChild(engineBadge);
+    });
+
+    const title = document.createElement("h3");
+    title.textContent = result.title;
+
+    const url = document.createElement("a");
+    url.href = result.url;
+    url.className = "result-url";
+    url.textContent = result.url;
+    url.target = "_blank";
+    url.rel = "noopener noreferrer";
+
+    const description = document.createElement("p");
+    description.className = "result-description";
+    description.textContent = result.description;
+
+    // Ajouter un bouton "Visiter"
+    const visitButton = document.createElement("a");
+    visitButton.href = result.url;
+    visitButton.className = "visit-button";
+    visitButton.textContent = window.t ? window.t("visitLink") : "Visiter";
+    visitButton.target = "_blank";
+    visitButton.rel = "noopener noreferrer";
+
+    // Wrapper pour le score et les moteurs
+    const metaInfoWrapper = document.createElement("div");
+    metaInfoWrapper.className = "result-meta-info";
+    metaInfoWrapper.appendChild(scoreLabel);
+    metaInfoWrapper.appendChild(enginesLabel);
+
+    resultItem.appendChild(metaInfoWrapper);
+    resultItem.appendChild(title);
+    resultItem.appendChild(url);
+    resultItem.appendChild(description);
+    resultItem.appendChild(visitButton);
+
+    return resultItem;
+  }
+
+  // Fonction pour créer un élément de résultat (ancienne version)
   function createResultItem(result, engine) {
     const resultItem = document.createElement("div");
     resultItem.className = "result-item";
@@ -200,10 +324,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Fonction pour filtrer les résultats par moteur de recherche
   function filterResultsByEngine(engine) {
-    const resultItems = document.querySelectorAll(".result-item");
+    // L'onglet "Tous" montre tous les résultats
+    if (engine === "all") {
+      document.querySelectorAll(".result-item").forEach((item) => {
+        item.style.display = "block";
+      });
+      return;
+    }
 
-    resultItems.forEach((item) => {
-      if (engine === "all" || item.dataset.engine === engine) {
+    // Logique pour les résultats scorés
+    const scoredResults = document.querySelectorAll(".scored-result");
+    if (scoredResults.length > 0) {
+      scoredResults.forEach((item) => {
+        const engines = item.dataset.engines.split(",");
+        if (engines.includes(engine)) {
+          item.style.display = "block";
+        } else {
+          item.style.display = "none";
+        }
+      });
+      return;
+    }
+
+    // Ancien filtrage par attribut data-engine pour les résultats non scorés
+    document.querySelectorAll(".result-item").forEach((item) => {
+      if (item.dataset.engine === engine) {
         item.style.display = "block";
       } else {
         item.style.display = "none";
