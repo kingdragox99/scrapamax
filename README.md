@@ -4,12 +4,16 @@ Scrapamax est une application web qui permet de rechercher un mot ou un pseudo s
 
 ## Fonctionnalités
 
-- Recherche avancée sur Google, Bing, DuckDuckGo, Yandex et Ecosia
+- Recherche avancée sur Google, Bing, DuckDuckGo, Yandex, Ecosia, Brave et Baidu
 - Technique anti-détection avec navigation headless
-- Stockage des résultats dans une base de données SQLite
-- Interface utilisateur moderne et réactive
+- Gestion intelligente des CAPTCHA avec détection automatique
+- Support pour SmartCaptcha de Yandex
+- Système de scoring des résultats (de 1.0 à 5.0) basé sur la présence dans différents moteurs
+- Personnalisation des user agents en fonction de la région et de la langue
+- Interface utilisateur moderne avec contraste amélioré
 - Filtrage des résultats par moteur de recherche
 - Historique des recherches avec possibilité de revoir les résultats précédents
+- Support multilingue
 
 ## Prérequis
 
@@ -52,10 +56,12 @@ npm run dev
 
 - `index.js` - Point d'entrée de l'application
 - `database.js` - Gestion de la base de données SQLite
+- `scoring.js` - Module de scoring des résultats
 - `routes/` - Définition des routes API
-- `services/` - Services pour interroger les moteurs de recherche
+- `services/engines/` - Modules spécifiques à chaque moteur de recherche
 - `public/` - Fichiers statiques (CSS, JavaScript)
 - `views/` - Templates EJS pour le rendu des pages
+- `locales/` - Fichiers de traduction pour l'internationalisation
 
 ## Détails techniques
 
@@ -63,12 +69,24 @@ Cette application utilise plusieurs techniques avancées pour récupérer les r�
 
 - **Puppeteer** - Navigation automatisée avec un navigateur headless
 - **Puppeteer-extra et Stealth plugin** - Évite la détection des navigateurs automatisés
-- **User-Agent aléatoire** - Change l'en-tête User-Agent à chaque requête
+- **User-Agent personnalisés** - Adapte l'en-tête User-Agent selon la région et la langue
+- **Détection de CAPTCHA** - Interaction avec l'utilisateur pour résoudre les CAPTCHA
 - **Délais et pauses aléatoires** - Simule un comportement humain
 - **Interactions avec les pages** - Gestion des popups, scrolling et autres actions
 - **Contournement des bannières de cookies** - Accepte automatiquement les cookies
+- **Normalisation d'URL** - Suppression des paramètres de tracking pour la déduplication des résultats
+- **Scoring intelligent** - Évaluation des résultats basée sur leur présence dans différents moteurs
 
 Ces techniques permettent de récupérer les résultats même sur les moteurs qui bloquent normalement le scraping traditionnel.
+
+## Améliorations récentes
+
+- Correction des erreurs lors du traitement des résultats de recherche
+- Amélioration du contraste et de la lisibilité de l'interface
+- Repositionnement de la notification CAPTCHA pour éviter le chevauchement
+- Mise à jour des sélecteurs pour s'adapter aux changements dans les structures HTML des moteurs
+- Optimisation du système de scoring des résultats
+- Support étendu à Brave et Baidu
 
 ## Limitations et considérations
 
@@ -83,4 +101,4 @@ Ce projet est sous licence MIT.
 
 ---
 
-_Note: Cette application est conçue à des fins éducatives. Veuillez respecter les conditions d'utilisation des moteurs de recherche et utiliser cette application de manière responsable et éthique._
+_Note: Cette application est conçue à des fins éducatives. Veuillez respecter les conditions d'utilisation des moteurs de recherche et utiliser cette application de manière responsable et éthique xoxo._
