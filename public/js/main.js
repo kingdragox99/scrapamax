@@ -5,10 +5,39 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchButton = document.getElementById("search-button");
   const loadingIndicator = document.getElementById("loading");
   const resultsContainer = document.getElementById("results-container");
+  const historyContainer = document.getElementById("history-container");
   const searchTermDisplay = document.getElementById("search-term");
   const resultsList = document.getElementById("results-list");
   const historyList = document.getElementById("history-list");
   const tabButtons = document.querySelectorAll(".tab-button");
+  const mainTabButtons = document.querySelectorAll(".main-tab-button");
+
+  // Gestion des onglets principaux
+  mainTabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      // Mise à jour de l'onglet actif
+      mainTabButtons.forEach((btn) => btn.classList.remove("active"));
+      button.classList.add("active");
+
+      // Afficher le contenu correspondant
+      const tabName = button.dataset.tab;
+      document.querySelectorAll("[data-tab-content]").forEach((content) => {
+        content.classList.remove("active");
+      });
+
+      const targetContent = document.querySelector(
+        `[data-tab-content="${tabName}"]`
+      );
+      if (targetContent) {
+        targetContent.classList.add("active");
+      }
+    });
+  });
+
+  // Initialisation : activer l'onglet historique par défaut
+  document
+    .querySelector('[data-tab-content="history"]')
+    .classList.add("active");
 
   // Charger l'historique des recherches au chargement de la page
   loadSearchHistory();
@@ -46,6 +75,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Afficher les résultats
       displayResults(data);
+
+      // Basculer vers l'onglet des résultats
+      mainTabButtons.forEach((btn) => btn.classList.remove("active"));
+      document.querySelector('[data-tab="results"]').classList.add("active");
+      document.querySelectorAll("[data-tab-content]").forEach((content) => {
+        content.classList.remove("active");
+      });
+      resultsContainer.classList.add("active");
 
       // Rafraîchir l'historique des recherches
       loadSearchHistory();
@@ -172,6 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
       data.forEach((search) => {
         const historyItem = document.createElement("div");
         historyItem.className = "history-item";
+        historyItem.dataset.searchId = search.id;
 
         const queryInfo = document.createElement("div");
 
@@ -193,14 +231,25 @@ document.addEventListener("DOMContentLoaded", () => {
         count.className = "history-count";
         count.textContent = `${search.resultCount} résultats`;
 
+        const actionButtons = document.createElement("div");
+        actionButtons.className = "history-actions";
+
         const viewButton = document.createElement("button");
         viewButton.className = "view-results";
         viewButton.textContent = "Voir";
         viewButton.addEventListener("click", () => loadResults(search.id));
 
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "delete-search";
+        deleteButton.textContent = "Supprimer";
+        deleteButton.addEventListener("click", () => deleteSearch(search.id));
+
+        actionButtons.appendChild(viewButton);
+        actionButtons.appendChild(deleteButton);
+
         resultInfo.appendChild(count);
         resultInfo.appendChild(document.createElement("br"));
-        resultInfo.appendChild(viewButton);
+        resultInfo.appendChild(actionButtons);
 
         historyItem.appendChild(queryInfo);
         historyItem.appendChild(resultInfo);
@@ -232,14 +281,56 @@ document.addEventListener("DOMContentLoaded", () => {
       // Afficher les résultats
       displayResults(data);
 
-      // Faire défiler vers les résultats
-      resultsContainer.scrollIntoView({ behavior: "smooth" });
+      // Basculer vers l'onglet des résultats
+      mainTabButtons.forEach((btn) => btn.classList.remove("active"));
+      document.querySelector('[data-tab="results"]').classList.add("active");
+      document.querySelectorAll("[data-tab-content]").forEach((content) => {
+        content.classList.remove("active");
+      });
+      resultsContainer.classList.add("active");
     } catch (error) {
       console.error("Erreur:", error);
       alert("Une erreur est survenue lors du chargement des résultats");
     } finally {
       // Cacher l'indicateur de chargement
       loadingIndicator.classList.add("hidden");
+    }
+  }
+
+  // Fonction pour supprimer une recherche
+  async function deleteSearch(searchId) {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette recherche ?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/history/${searchId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de la suppression");
+      }
+
+      // Effet visuel de suppression
+      const historyItem = document.querySelector(
+        `.history-item[data-search-id="${searchId}"]`
+      );
+      if (historyItem) {
+        historyItem.classList.add("fade-out");
+        // Enlever l'élément après l'animation
+        setTimeout(() => {
+          historyItem.remove();
+
+          // Vérifier s'il reste des recherches
+          if (historyList.querySelectorAll(".history-item").length === 0) {
+            historyList.innerHTML = "<p>Aucune recherche effectuée.</p>";
+          }
+        }, 500);
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      alert("Une erreur est survenue lors de la suppression");
     }
   }
 });

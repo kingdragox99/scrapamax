@@ -33,7 +33,20 @@
           </div>
         </section>
 
-        <section class="results-section hidden" id="results-container">
+        <!-- Navigation principale -->
+        <div class="main-tabs">
+          <button class="main-tab-button active" data-tab="results">
+            Résultats
+          </button>
+          <button class="main-tab-button" data-tab="history">Historique</button>
+        </div>
+
+        <!-- Section des résultats -->
+        <section
+          class="results-section hidden"
+          id="results-container"
+          data-tab-content="results"
+        >
           <h2>Résultats pour: <span id="search-term"></span></h2>
 
           <div class="tabs">
@@ -50,8 +63,17 @@
           <div id="results-list"></div>
         </section>
 
-        <section class="history-section">
+        <!-- Section de l'historique (maintenant dans un onglet) -->
+        <section
+          class="history-section"
+          id="history-container"
+          data-tab-content="history"
+        >
           <h2>Historique des recherches</h2>
+          <p class="history-tip">
+            Cliquez sur "Voir" pour afficher les résultats d'une recherche
+            précédente ou sur "Supprimer" pour la retirer de l'historique.
+          </p>
           <div id="history-list">
             <p class="loading-message">Chargement de l'historique...</p>
           </div>
@@ -59,7 +81,10 @@
       </main>
 
       <footer>
-        <p>&copy; 2023 Scrapamax - Outil de recherche multi-moteurs</p>
+        <p>
+          &copy; <%= new Date().getFullYear();%> Scrapamax - Outil de recherche
+          multi-moteurs
+        </p>
       </footer>
     </div>
 

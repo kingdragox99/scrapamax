@@ -96,4 +96,29 @@ router.get("/results/:searchId", async (req, res) => {
   }
 });
 
+// Route pour supprimer une recherche et ses résultats
+router.delete("/history/:searchId", async (req, res) => {
+  try {
+    const { searchId } = req.params;
+
+    if (!searchId) {
+      return res.status(400).json({ error: "ID de recherche requis" });
+    }
+
+    const rowsAffected = await db.deleteSearch(searchId);
+
+    if (rowsAffected === 0) {
+      return res.status(404).json({ error: "Recherche non trouvée" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Recherche supprimée avec succès",
+    });
+  } catch (error) {
+    console.error("Erreur lors de la suppression de la recherche:", error);
+    return res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 module.exports = router;

@@ -117,10 +117,41 @@ function getSearchResults(searchId) {
   });
 }
 
+function deleteSearch(searchId) {
+  return new Promise((resolve, reject) => {
+    // Commencer une transaction pour s'assurer que tout est supprimé
+    db.serialize(() => {
+      db.run("BEGIN TRANSACTION");
+
+      // Supprimer d'abord les résultats associés (contrainte de clé étrangère)
+      db.run("DELETE FROM results WHERE search_id = ?", [searchId], (err) => {
+        if (err) {
+          db.run("ROLLBACK");
+          reject(err);
+          return;
+        }
+
+        // Ensuite supprimer la recherche
+        db.run("DELETE FROM searches WHERE id = ?", [searchId], function (err) {
+          if (err) {
+            db.run("ROLLBACK");
+            reject(err);
+            return;
+          }
+
+          db.run("COMMIT");
+          resolve(this.changes); // Retourne le nombre de lignes affectées
+        });
+      });
+    });
+  });
+}
+
 module.exports = {
   initDatabase,
   saveSearch,
   saveResult,
   getSearchHistory,
   getSearchResults,
+  deleteSearch,
 };
