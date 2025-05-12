@@ -4,10 +4,10 @@
  * mais il redirige vers l'implémentation modulaire dans /engines
  */
 
-const { searchAllEngines } = require("./engines");
+const { search } = require("./engines");
 
 const searchEngines = {
-  searchAllEngines,
+  searchAllEngines: search,
 };
 
 module.exports = searchEngines;

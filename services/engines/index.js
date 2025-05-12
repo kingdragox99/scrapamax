@@ -11,15 +11,15 @@ const searchBrave = require("./brave");
 const searchBaidu = require("./baidu");
 
 /**
- * Effectue une recherche sur les moteurs sélectionnés avec les options spécifiées
+ * Effectue une recherche sur plusieurs moteurs de recherche
  * @param {string} query - Le terme de recherche
  * @param {Object} options - Options de recherche
- * @param {Array} options.engines - Liste des moteurs à utiliser
- * @param {string} options.region - Région pour la recherche (si supportée)
- * @param {string} options.language - Langue pour la recherche (si supportée)
- * @returns {Promise<Object>} Résultats de recherche organisés par moteur
+ * @param {Array<string>} options.engines - Liste des moteurs à utiliser
+ * @param {string} options.region - Région de recherche (fr, us, etc.)
+ * @param {string} options.language - Langue de recherche (fr, en, etc.)
+ * @returns {Promise<Object>} Résultats de recherche par moteur
  */
-async function searchAllEngines(query, options = {}) {
+async function search(query, options = {}) {
   const {
     engines = [
       "google",
@@ -35,141 +35,235 @@ async function searchAllEngines(query, options = {}) {
   } = options;
 
   console.log(
-    `\n🚀 Recherche lancée sur les moteurs sélectionnés pour: "${query}"`
+    `🚀 Recherche lancée sur les moteurs sélectionnés pour: "${query}"`
   );
   console.log(`🌍 Région: ${region}, Langue: ${language}`);
   console.log(`🔍 Moteurs: ${engines.join(", ")}`);
 
-  // Initialiser les résultats vides pour chaque moteur
-  const allResults = {
-    google: [],
-    bing: [],
-    duckduckgo: [],
-    yandex: [],
-    ecosia: [],
-    brave: [],
-    baidu: [],
-  };
+  // Résultats par moteur
+  const results = {};
 
-  // Fonction pour exécuter une recherche avec gestion d'erreurs
-  const safeSearch = async (searchFn, engineName) => {
-    try {
-      // Ne faire la recherche que si le moteur est dans la liste sélectionnée
-      if (!engines.includes(engineName.toLowerCase())) {
-        console.log(
-          `⏭️ Moteur ${engineName} non sélectionné, recherche ignorée`
-        );
-        return [];
-      }
+  // Créer un tableau de promesses pour chaque moteur
+  const searchPromises = [];
 
-      // Passer les options de région et langue à la fonction de recherche
-      const searchOptions = { region, language };
-      const results = await searchFn(query, searchOptions);
-      return results || [];
-    } catch (error) {
-      console.error(
-        `❌ Erreur lors de la recherche ${engineName}:`,
-        error.message
-      );
-      return [];
-    }
-  };
-
-  try {
-    // Préparer un tableau pour les promesses des moteurs sélectionnés
-    const searchPromises = [];
-
-    // Google
-    if (engines.includes("google")) {
-      searchPromises.push(safeSearch(searchGoogle, "Google"));
-    } else {
-      searchPromises.push(Promise.resolve([]));
-    }
-
-    // Bing
-    if (engines.includes("bing")) {
-      searchPromises.push(safeSearch(searchBing, "Bing"));
-    } else {
-      searchPromises.push(Promise.resolve([]));
-    }
-
-    // DuckDuckGo
-    if (engines.includes("duckduckgo")) {
-      searchPromises.push(safeSearch(searchDuckDuckGo, "DuckDuckGo"));
-    } else {
-      searchPromises.push(Promise.resolve([]));
-    }
-
-    // Yandex
-    if (engines.includes("yandex")) {
-      searchPromises.push(safeSearch(searchYandex, "Yandex"));
-    } else {
-      searchPromises.push(Promise.resolve([]));
-    }
-
-    // Ecosia
-    if (engines.includes("ecosia")) {
-      searchPromises.push(safeSearch(searchEcosia, "Ecosia"));
-    } else {
-      searchPromises.push(Promise.resolve([]));
-    }
-
-    // Brave
-    if (engines.includes("brave")) {
-      searchPromises.push(safeSearch(searchBrave, "Brave"));
-    } else {
-      searchPromises.push(Promise.resolve([]));
-    }
-
-    // Baidu
-    if (engines.includes("baidu")) {
-      searchPromises.push(safeSearch(searchBaidu, "Baidu"));
-    } else {
-      searchPromises.push(Promise.resolve([]));
-    }
-
-    // Exécuter toutes les recherches en parallèle
-    const [
-      googleResults,
-      bingResults,
-      duckDuckGoResults,
-      yandexResults,
-      ecosiaResults,
-      braveResults,
-      baiduResults,
-    ] = await Promise.all(searchPromises);
-
-    // Assigner les résultats
-    allResults.google = googleResults;
-    allResults.bing = bingResults;
-    allResults.duckduckgo = duckDuckGoResults;
-    allResults.yandex = yandexResults;
-    allResults.ecosia = ecosiaResults;
-    allResults.brave = braveResults;
-    allResults.baidu = baiduResults;
-
-    console.log(
-      `\n📊 Résultats obtenus:\n` +
-        `  - Google: ${googleResults.length} résultats\n` +
-        `  - Bing: ${bingResults.length} résultats\n` +
-        `  - DuckDuckGo: ${duckDuckGoResults.length} résultats\n` +
-        `  - Yandex: ${yandexResults.length} résultats\n` +
-        `  - Ecosia: ${ecosiaResults.length} résultats\n` +
-        `  - Brave: ${braveResults.length} résultats\n` +
-        `  - Baidu: ${baiduResults.length} résultats`
+  // Ajouter des promesses pour les moteurs sélectionnés
+  if (engines.includes("google")) {
+    searchPromises.push(
+      searchGoogle(query, { region, language })
+        .then((res) => {
+          results.google = res;
+        })
+        .catch((error) => {
+          console.error("❌ Erreur Google:", error.message);
+          results.google = [
+            {
+              title: "Erreur Google",
+              url: `https://www.google.com/search?q=${encodeURIComponent(
+                query
+              )}`,
+              description: `Erreur: ${error.message}`,
+            },
+          ];
+        })
     );
-
-    return allResults;
-  } catch (error) {
-    console.error(
-      "❌ Erreur générale lors de la recherche sur tous les moteurs:",
-      error.message
-    );
-
-    // En cas d'erreur générale, nous retournons quand même les résultats
-    // partiels qui ont pu être obtenus
-    return allResults;
   }
+
+  if (engines.includes("bing")) {
+    searchPromises.push(
+      searchBing(query, { region, language })
+        .then((res) => {
+          results.bing = res;
+        })
+        .catch((error) => {
+          console.error("❌ Erreur Bing:", error.message);
+          results.bing = [
+            {
+              title: "Erreur Bing",
+              url: `https://www.bing.com/search?q=${encodeURIComponent(query)}`,
+              description: `Erreur: ${error.message}`,
+            },
+          ];
+        })
+    );
+  }
+
+  if (engines.includes("duckduckgo")) {
+    searchPromises.push(
+      searchDuckDuckGo(query, region, language)
+        .then((res) => {
+          results.duckduckgo = res;
+        })
+        .catch((error) => {
+          console.error("❌ Erreur DuckDuckGo:", error.message);
+          results.duckduckgo = [
+            {
+              title: "Erreur DuckDuckGo",
+              url: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
+              description: `Erreur: ${error.message}`,
+            },
+          ];
+        })
+    );
+  }
+
+  if (engines.includes("yandex")) {
+    searchPromises.push(
+      searchYandex(query, { region, language })
+        .then((res) => {
+          results.yandex = res;
+        })
+        .catch((error) => {
+          console.error("❌ Erreur Yandex:", error.message);
+          results.yandex = [
+            {
+              title: "Erreur Yandex",
+              url: `https://yandex.com/search/?text=${encodeURIComponent(
+                query
+              )}`,
+              description: `Erreur: ${error.message}`,
+            },
+          ];
+        })
+    );
+  }
+
+  if (engines.includes("ecosia")) {
+    searchPromises.push(
+      searchEcosia(query, region, language)
+        .then((res) => {
+          results.ecosia = res;
+        })
+        .catch((error) => {
+          console.error("❌ Erreur Ecosia:", error.message);
+          results.ecosia = [
+            {
+              title: "Erreur Ecosia",
+              url: `https://www.ecosia.org/search?q=${encodeURIComponent(
+                query
+              )}`,
+              description: `Erreur: ${error.message}`,
+            },
+          ];
+        })
+    );
+  }
+
+  if (engines.includes("brave")) {
+    searchPromises.push(
+      searchBrave(query, region, language)
+        .then((res) => {
+          results.brave = res;
+        })
+        .catch((error) => {
+          console.error("❌ Erreur Brave:", error.message);
+          results.brave = [
+            {
+              title: "Erreur Brave",
+              url: `https://search.brave.com/search?q=${encodeURIComponent(
+                query
+              )}`,
+              description: `Erreur: ${error.message}`,
+            },
+          ];
+        })
+    );
+  }
+
+  if (engines.includes("baidu")) {
+    searchPromises.push(
+      searchBaidu(query, region, language)
+        .then((res) => {
+          results.baidu = res;
+        })
+        .catch((error) => {
+          console.error("❌ Erreur Baidu:", error.message);
+          results.baidu = [
+            {
+              title: "Erreur Baidu",
+              url: `https://www.baidu.com/s?wd=${encodeURIComponent(query)}`,
+              description: `Erreur: ${error.message}`,
+            },
+          ];
+        })
+    );
+  }
+
+  // Attendre que toutes les recherches se terminent
+  await Promise.all(searchPromises);
+
+  // Afficher un résumé des résultats obtenus
+  console.log("📊 Résultats obtenus:");
+  Object.keys(results).forEach((engine) => {
+    console.log(
+      `  - ${engine.charAt(0).toUpperCase() + engine.slice(1)}: ${
+        results[engine].length
+      } résultats`
+    );
+  });
+
+  // Calculer le score de chaque URL en fonction du nombre de moteurs qui l'ont trouvée
+  const uniqueResults = computeUniqueResults(results);
+
+  return {
+    query,
+    results,
+    scoredResults: uniqueResults.scored,
+    totalUniqueResults: uniqueResults.total,
+  };
 }
 
-module.exports = { searchAllEngines };
+/**
+ * Calcule les résultats uniques et leur attribue un score
+ * @param {Object} results - Les résultats par moteur
+ * @returns {Object} Résultats uniques avec scores
+ */
+function computeUniqueResults(results) {
+  // Tableau pour stocker les résultats uniques
+  const uniqueResults = [];
+  // Map pour suivre les URLs déjà vues
+  const urlMap = new Map();
+  // Compter les moteurs disponibles
+  const totalEngines = Object.keys(results).length;
+
+  // Parcourir tous les moteurs et résultats
+  for (const engine in results) {
+    for (const result of results[engine]) {
+      // Normaliser l'URL pour la comparaison
+      const url = result.url.toLowerCase().trim();
+
+      // Si cette URL existe déjà dans notre map
+      if (urlMap.has(url)) {
+        const index = urlMap.get(url);
+        uniqueResults[index].engines.push(engine);
+        uniqueResults[index].rawScore += 1;
+        uniqueResults[index].score = Math.min(
+          5.0,
+          ((uniqueResults[index].rawScore / totalEngines) * 5.0).toFixed(1)
+        );
+      } else {
+        // Nouvelle URL
+        const scoreEntry = {
+          ...result,
+          engines: [engine],
+          rawScore: 1,
+          score: ((1.0 / totalEngines) * 5.0).toFixed(1), // Score entre 1.0 et 5.0
+        };
+
+        urlMap.set(url, uniqueResults.length);
+        uniqueResults.push(scoreEntry);
+      }
+    }
+  }
+
+  // Trier les résultats par score (descendant)
+  const scoredResults = [...uniqueResults].sort(
+    (a, b) => b.rawScore - a.rawScore
+  );
+
+  return {
+    scored: scoredResults,
+    total: uniqueResults.length,
+  };
+}
+
+module.exports = { search };

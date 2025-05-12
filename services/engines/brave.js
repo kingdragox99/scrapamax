@@ -8,21 +8,23 @@ puppeteer.use(StealthPlugin());
 /**
  * Recherche sur Brave Search avec Puppeteer
  * @param {string} query - Le terme de recherche
+ * @param {string} region - La région de la recherche
+ * @param {string} language - La langue de la recherche
  * @returns {Promise<Array>} Tableau des résultats de recherche
  */
-async function searchBrave(query) {
+async function searchBrave(query, region, language) {
   console.log(`\n🔍 Tentative de recherche Brave pour: "${query}"`);
   let browser;
   try {
     browser = await utils.getBrowser();
-    console.log("📝 Configuration de la page Brave...");
+    console.log("📝 Configuration de la page Brave Search...");
     const page = await browser.newPage();
 
     // Masquer la signature Puppeteer/WebDriver
     await utils.setupBrowserAntiDetection(page);
 
-    // Configurer un user agent aléatoire mais réaliste
-    const userAgent = await utils.getUserAgent();
+    // Configurer un user agent approprié à la région/langue
+    const userAgent = await utils.getUserAgent(region, language);
     await page.setUserAgent(userAgent);
     console.log(`🔒 User-Agent configuré: ${userAgent.substring(0, 50)}...`);
 

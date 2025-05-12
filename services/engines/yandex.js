@@ -3,9 +3,14 @@ const utils = require("./utils");
 /**
  * Recherche sur Yandex avec Puppeteer
  * @param {string} query - Le terme de recherche
+ * @param {Object} options - Options de recherche
+ * @param {string} options.region - Code de région pour la recherche
+ * @param {string} options.language - Code de langue pour la recherche
  * @returns {Promise<Array>} Tableau des résultats de recherche
  */
-async function searchYandex(query) {
+async function searchYandex(query, options = {}) {
+  const { region = "global", language = "auto" } = options;
+
   console.log(`\n🔍 Tentative de recherche Yandex pour: "${query}"`);
   let browser;
   try {
@@ -28,8 +33,8 @@ async function searchYandex(query) {
           : originalQuery(parameters);
     });
 
-    // Configurer un user agent aléatoire pour Yandex
-    const userAgent = await utils.getUserAgent();
+    // Configurer un user agent approprié à la région/langue
+    const userAgent = await utils.getUserAgent(region, language);
     await page.setUserAgent(userAgent);
     console.log(`🔒 User-Agent configuré: ${userAgent.substring(0, 50)}...`);
 

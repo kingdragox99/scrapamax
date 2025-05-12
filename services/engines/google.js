@@ -25,8 +25,8 @@ async function searchGoogle(query, options = {}) {
     console.log("📝 Configuration de la page Google...");
     const page = await browser.newPage();
 
-    // Configurer un user agent aléatoire
-    const userAgent = await utils.getUserAgent();
+    // Configurer un user agent approprié à la région/langue
+    const userAgent = await utils.getUserAgent(region, language);
     await page.setUserAgent(userAgent);
     console.log(`🔒 User-Agent configuré: ${userAgent.substring(0, 50)}...`);
 

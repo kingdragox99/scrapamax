@@ -8,9 +8,11 @@ puppeteer.use(StealthPlugin());
 /**
  * Recherche sur Baidu avec Puppeteer
  * @param {string} query - Le terme de recherche
+ * @param {string} region - La région
+ * @param {string} language - La langue
  * @returns {Promise<Array>} Tableau des résultats de recherche
  */
-async function searchBaidu(query) {
+async function searchBaidu(query, region, language) {
   console.log(`\n🔍 Tentative de recherche Baidu pour: "${query}"`);
   let browser;
   try {
@@ -21,8 +23,8 @@ async function searchBaidu(query) {
     // Masquer la signature Puppeteer/WebDriver
     await utils.setupBrowserAntiDetection(page);
 
-    // Configurer un user agent aléatoire mais réaliste
-    const userAgent = await utils.getUserAgent();
+    // Configurer un user agent approprié à la région/langue
+    const userAgent = await utils.getUserAgent(region, language);
     await page.setUserAgent(userAgent);
     console.log(`🔒 User-Agent configuré: ${userAgent.substring(0, 50)}...`);
 

@@ -61,6 +61,14 @@ function scoreResults(allResults) {
   for (const engine in allResults) {
     const results = allResults[engine];
 
+    // Vérifier que results est bien un tableau
+    if (!Array.isArray(results)) {
+      console.log(
+        `Avertissement: les résultats pour "${engine}" ne sont pas un tableau, ignorés`
+      );
+      continue;
+    }
+
     // Parcourir les résultats du moteur actuel
     results.forEach((result) => {
       // Normaliser l'URL pour la comparaison

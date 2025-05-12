@@ -34,22 +34,30 @@ router.post("/search", async (req, res) => {
     });
 
     // Effectuer la recherche uniquement sur les moteurs sélectionnés
-    const results = await searchEngines.searchAllEngines(query, {
+    const searchResult = await searchEngines.searchAllEngines(query, {
       engines,
       region,
       language,
     });
 
+    // Accéder à l'objet "results" qui contient les résultats par moteur
+    const { results } = searchResult;
+
     // Sauvegarder les résultats dans la base de données
     for (const engine in results) {
-      for (const result of results[engine]) {
-        await db.saveResult(
-          searchId,
-          engine,
-          result.title,
-          result.url,
-          result.description
-        );
+      // Vérifier que results[engine] est un tableau valide et non vide
+      if (Array.isArray(results[engine]) && results[engine].length > 0) {
+        for (const result of results[engine]) {
+          await db.saveResult(
+            searchId,
+            engine,
+            result.title,
+            result.url,
+            result.description
+          );
+        }
+      } else {
+        console.log(`Pas de résultats valides pour le moteur: ${engine}`);
       }
     }
 

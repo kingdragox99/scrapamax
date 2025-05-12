@@ -3,9 +3,11 @@ const utils = require("./utils");
 /**
  * Recherche sur Ecosia avec Puppeteer
  * @param {string} query - Le terme de recherche
+ * @param {string} region - La région pour le user agent
+ * @param {string} language - La langue pour le user agent
  * @returns {Promise<Array>} Tableau des résultats de recherche
  */
-async function searchEcosia(query) {
+async function searchEcosia(query, region, language) {
   console.log(`\n🔍 Tentative de recherche Ecosia pour: "${query}"`);
   let browser;
   try {
@@ -31,8 +33,8 @@ async function searchEcosia(query) {
       });
     });
 
-    // Configurer un user agent aléatoire mais réaliste
-    const userAgent = await utils.getUserAgent();
+    // Configurer un user agent approprié à la région/langue
+    const userAgent = await utils.getUserAgent(region, language);
     await page.setUserAgent(userAgent);
     console.log(`🔒 User-Agent configuré: ${userAgent.substring(0, 50)}...`);
 
