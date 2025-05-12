@@ -331,6 +331,28 @@ async function handleCaptcha(page, engineName) {
       '[aria-label="Captcha"]',
     ],
     google: ["#captcha", ".g-recaptcha", 'iframe[src*="recaptcha"]'],
+    yandex: [
+      ".CheckboxCaptcha",
+      ".AdvancedCaptcha",
+      ".AdvancedCaptcha-Image",
+      ".Captcha-Image",
+      ".captcha__image",
+      'img[src*="captcha"]',
+      'div[data-type="captcha"]',
+      'form[action*="captcha"]',
+      'div:contains("Je ne suis pas un robot")',
+      'div:contains("I am not a robot")',
+      // SmartCaptcha par Yandex Cloud
+      ".SmartCaptcha",
+      ".SmartCaptcha-Anchor",
+      ".SmartCaptcha-CheckboxCaptcha",
+      ".smartcaptcha",
+      'iframe[src*="captcha.yandex.com"]',
+      'iframe[src*="smart-captcha"]',
+      'iframe[src*="smartcaptcha"]',
+      'div[data-testid="checkbox-captcha"]',
+      'a[href*="yandex.com/support/smart-captcha"]',
+    ],
     general: [
       "#captcha",
       ".captcha",
@@ -436,26 +458,29 @@ async function handleCaptcha(page, engineName) {
       const div = document.createElement("div");
       div.id = "captcha-notification";
       div.style.position = "fixed";
-      div.style.top = "0";
+      div.style.bottom = "0";
       div.style.left = "0";
       div.style.right = "0";
-      div.style.backgroundColor = "rgba(255, 0, 0, 0.8)";
+      div.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
       div.style.color = "white";
-      div.style.padding = "20px";
+      div.style.padding = "15px";
       div.style.textAlign = "center";
       div.style.zIndex = "9999";
-      div.style.fontSize = "18px";
+      div.style.fontSize = "16px";
       div.style.fontWeight = "bold";
+      div.style.maxHeight = "30%";
+      div.style.boxShadow = "0 -2px 10px rgba(0,0,0,0.3)";
+      div.style.borderTop = "2px solid var(--primary-color, #ff7f00)";
       div.innerHTML = `
-        CAPTCHA détecté! Veuillez résoudre le CAPTCHA.<br>
+        CAPTCHA détecté! Veuillez résoudre le CAPTCHA ci-dessus.<br>
         Une fois résolu, cliquez sur le bouton ci-dessous pour continuer la recherche.<br>
         <button id="captcha-solved" style="
-          background-color: white;
-          color: black;
-          padding: 10px 20px;
-          margin-top: 10px;
+          background-color: #ff7f00;
+          color: white;
+          padding: 8px 16px;
+          margin-top: 8px;
           border: none;
-          border-radius: 5px;
+          border-radius: 4px;
           cursor: pointer;
           font-weight: bold;
         ">J'ai résolu le CAPTCHA</button>

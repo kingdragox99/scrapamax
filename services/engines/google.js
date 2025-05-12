@@ -132,21 +132,41 @@ async function searchGoogle(query, options = {}) {
 
       // Plusieurs sélecteurs pour s'adapter aux changements de Google
       const selectors = [
-        // Structure principale
+        // Structure 2024 mise à jour
+        {
+          container: "div.v7W49e > div > div.MjjYud",
+          title: "h3.LC20lb",
+          link: ".yuRUbf > a",
+          snippet: ".VwiC3b",
+        },
+        // Structure 2024 alternative
+        {
+          container: "div.g",
+          title: "h3.LC20lb",
+          link: "div.yuRUbf > a",
+          snippet: "div.VwiC3b",
+        },
+        // Structure pour les résultats enrichis
+        {
+          container: "div.N54PNb",
+          title: "h3.LC20lb",
+          link: "a",
+          snippet: ".VwiC3b, .k8XOCe",
+        },
+        // Ancienne structure principale
         {
           container: ".g",
           title: "h3",
           link: "a",
           snippet: ".VwiC3b, .st",
         },
-        // Structure alternative
+        // Autres structures de rechange
         {
           container: ".Gx5Zad",
           title: "h3",
           link: "a",
           snippet: ".lEBKkf, .s3v9rd, .yDYNvb",
         },
-        // Structure encore plus récente
         {
           container: ".MjjYud",
           title: "h3",
@@ -154,6 +174,17 @@ async function searchGoogle(query, options = {}) {
           snippet: "[data-sncf], [data-content-feature='1']",
         },
       ];
+
+      // Utiliser la console pour déboguer
+      const allH3 = document.querySelectorAll("h3");
+      console.log(`Nombre total de h3 dans la page: ${allH3.length}`);
+
+      document.querySelectorAll("div.g").forEach((el, i) => {
+        console.log(
+          `Contenu div.g #${i + 1}:`,
+          el.innerHTML.substring(0, 100) + "..."
+        );
+      });
 
       // Essayer chaque ensemble de sélecteurs
       for (const selector of selectors) {
@@ -166,7 +197,10 @@ async function searchGoogle(query, options = {}) {
 
           elements.forEach((element) => {
             const titleElement = element.querySelector(selector.title);
-            const linkElement = titleElement ? titleElement.closest("a") : null;
+            const linkElement = titleElement
+              ? titleElement.closest("a") ||
+                element.querySelector(selector.link)
+              : element.querySelector(selector.link);
             const snippetElement = element.querySelector(selector.snippet);
 
             // Vérification des conditions pour un résultat valide
@@ -194,39 +228,63 @@ async function searchGoogle(query, options = {}) {
         }
       }
 
-      // Si aucun résultat n'a été trouvé, essayer une méthode plus générique
+      // Si aucun résultat n'a été trouvé, essayer une méthode très générique
       if (searchResults.length === 0) {
         console.log(
           "Aucun résultat trouvé avec les sélecteurs standard, essai de méthode alternative..."
         );
 
-        // Chercher tous les h3 (titres de résultats) dans la page
-        const allH3 = document.querySelectorAll("h3");
+        // Essayer une approche encore plus générique basée sur les liens
+        const allLinks = Array.from(
+          document.querySelectorAll('a[href^="http"]')
+        ).filter((link) => {
+          const href = link.href.toLowerCase();
+          return (
+            !href.includes("google.com") &&
+            !href.includes("accounts.google") &&
+            !href.includes("support.google") &&
+            !href.includes("policies.google") &&
+            !href.includes("maps.google")
+          );
+        });
 
-        allH3.forEach((h3) => {
-          const link = h3.closest("a");
-          if (link && link.href && link.href.startsWith("http")) {
-            // Trouver un élément parent qui contient la description
-            let parentElement = h3.parentElement;
-            let maxDepth = 5; // Éviter de remonter trop haut dans l'arborescence
+        console.log(`Trouvé ${allLinks.length} liens avec URLs externes`);
+
+        allLinks.forEach((link) => {
+          // Vérifier si ce lien a un titre h3 proche ou contient du texte significatif
+          const parentDiv = link.closest("div");
+          const nearestH3 = parentDiv ? parentDiv.querySelector("h3") : null;
+          const title = nearestH3
+            ? nearestH3.textContent.trim()
+            : link.textContent.trim().length > 10
+            ? link.textContent.trim()
+            : null;
+
+          if (title) {
+            // Chercher du texte descriptif autour du lien
             let description = "";
+            if (parentDiv) {
+              // Essayer de trouver un paragraphe ou div contenant du texte
+              const textNodes = Array.from(
+                parentDiv.querySelectorAll("div, span, p")
+              ).filter((el) => {
+                const text = el.textContent.trim();
+                return (
+                  text.length > 30 && // Assez long pour être une description
+                  !text.includes(title) && // Ne contient pas le titre (dupliqué)
+                  !el.querySelector("h3")
+                ); // Ne contient pas un h3
+              });
 
-            while (maxDepth-- > 0 && parentElement) {
-              // Chercher un paragraphe ou un div qui contient du texte
-              const descElement = parentElement.querySelector(
-                "div:not(:has(h3)), span:not(:has(h3)), p"
-              );
-              if (descElement && descElement.textContent.trim().length > 20) {
-                description = descElement.textContent
+              if (textNodes.length > 0) {
+                description = textNodes[0].textContent
                   .trim()
                   .replace(/\s+/g, " ");
-                break;
               }
-              parentElement = parentElement.parentElement;
             }
 
             searchResults.push({
-              title: h3.textContent.trim(),
+              title: title,
               url: link.href,
               description: description || "Pas de description disponible",
             });

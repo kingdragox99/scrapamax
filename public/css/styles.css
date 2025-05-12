@@ -257,7 +257,7 @@ input[type="text"] {
 .engine-checkbox {
   display: flex;
   align-items: center;
-  background-color: #ff0000;
+  background-color: var(--checkbox-bg);
   padding: 10px 15px;
   border-radius: 4px;
   border: 1px solid var(--border-color);
@@ -267,8 +267,9 @@ input[type="text"] {
 }
 
 .engine-checkbox:hover {
-  background-color: var(--checkbox-selected-bg);
+  background-color: var(--primary-dark);
   border-color: var(--primary-color);
+  color: var(--button-text);
 }
 
 .engine-checkbox input {
@@ -888,147 +889,5 @@ footer {
 
 /* Styles pour les options de recherche avancées */
 .search-options {
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 15px;
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  margin-top: 20px;
-  display: none; /* Caché par défaut */
-  transition: all 0.3s ease;
-}
-
-.search-options.visible {
-  display: block;
-}
-
-.search-engines-options,
-.region-options {
-  margin-bottom: 20px;
-}
-
-.search-options h3 {
-  font-size: 16px;
-  margin-bottom: 10px;
-  color: #333;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 5px;
-}
-
-.engines-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.engine-checkbox {
-  display: flex;
-  align-items: center;
-  background-color: var(--primary-color);
-  padding: 8px 12px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.engine-checkbox:hover {
-  background-color: var(--primary-dark);
-}
-
-.engine-checkbox input {
-  margin-right: 8px;
-}
-
-.region-selects {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.select-group {
-  flex: 1;
-  min-width: 200px;
-}
-
-.select-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-size: 14px;
-  color: #555;
-}
-
-.select-group select {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  background-color: var(--primary-color);
-  font-size: 14px;
-}
-
-#select-all-engines,
-#deselect-all-engines {
-  padding: 8px 12px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s;
-}
-
-#select-all-engines:hover,
-#deselect-all-engines:hover {
-  background-color: #0056b3;
-}
-
-#deselect-all-engines {
-  background-color: #6c757d;
-}
-
-#deselect-all-engines:hover {
-  background-color: #555;
-}
-
-.toggle-button {
-  background-color: transparent;
-  border: none;
-  color: #007bff;
-  padding: 8px 0;
-  cursor: pointer;
-  font-size: 14px;
-  width: 100%;
-  text-align: center;
-}
-
-.toggle-button:hover {
-  text-decoration: underline;
-}
-
-.toggle-icon {
-  display: inline-block;
-  transition: transform 0.3s;
-}
-
-.toggle-button.active .toggle-icon {
-  transform: rotate(180deg);
-}
-
-@media (max-width: 768px) {
-  .engines-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .region-selects {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .select-group {
-    width: 100%;
-  }
+  display: none; /* Cette classe n'est plus utilisée, remplacée par la modale */
 }
