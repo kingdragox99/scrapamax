@@ -90,6 +90,7 @@ async function searchGoogle(query) {
         'button[aria-label="Accepter"]',
         "button.tHlp8d",
         "button#L2AGLb",
+        '[aria-modal="true"] button + button', // Nouvelle approche pour cibler le second bouton
       ];
 
       for (const selector of selectors) {
@@ -106,26 +107,8 @@ async function searchGoogle(query) {
     }
 
     console.log(`🖱️ Simulation de scrolling pour paraître humain...`);
-    // Ajouter plusieurs scrollings plus naturels pour charger plus de résultats
-    await page.evaluate(() => {
-      return new Promise((resolve) => {
-        let totalHeight = 0;
-        const distance = 300;
-        const maxScrolls = 5;
-        let scrolls = 0;
-
-        const timer = setInterval(() => {
-          window.scrollBy(0, distance);
-          totalHeight += distance;
-          scrolls++;
-
-          if (scrolls >= maxScrolls) {
-            clearInterval(timer);
-            resolve();
-          }
-        }, 300);
-      });
-    });
+    // Utiliser la nouvelle fonction humanScroll au lieu du scrolling précédent
+    await utils.humanScroll(page);
 
     await utils.randomDelay(2000, 3000);
 
@@ -136,31 +119,35 @@ async function searchGoogle(query) {
 
       const searchResults = [];
 
-      // Approche 1: Cibler les résultats organiques avec plusieurs sélecteurs possibles
+      // Nouveaux sélecteurs mis à jour pour la structure actuelle de Google
       const selectors = [
+        // Structure principale actuelle de Google
+        {
+          container: "div.g, div[jscontroller]",
+          title: "h3",
+          link: "a",
+          snippet: "div[data-snc], div.VwiC3b, div[data-sncf], div[style]",
+        },
+        // Autres dispositions possibles
+        {
+          container: ".MjjYud",
+          title: "h3",
+          link: "a[href]",
+          snippet: "div[data-sncf], div.VwiC3b, div[style]",
+        },
+        // Résultats commerciaux et autres formats
+        {
+          container: "div[jscontroller][data-sokoban-feature]",
+          title: "h3",
+          link: "a[ping], a[data-ved]",
+          snippet: "div[style], div[role='complementary'], div.a4bIc",
+        },
+        // Anciens sélecteurs pour compatibilité
         {
           container: "#search .g",
           title: "h3",
           link: "a",
           snippet: "div.VwiC3b",
-        },
-        {
-          container: "#rso .g",
-          title: "h3",
-          link: "a",
-          snippet: "div.VwiC3b",
-        },
-        {
-          container: "div[data-sokoban-grid] div[data-header-feature]",
-          title: "h3",
-          link: "a",
-          snippet: "[data-content-feature]",
-        },
-        {
-          container: "div.MjjYud",
-          title: "h3",
-          link: "a",
-          snippet: "div[data-sncf]",
         },
       ];
 
@@ -174,23 +161,64 @@ async function searchGoogle(query) {
         if (elements.length > 0) {
           elements.forEach((element) => {
             const titleElement = element.querySelector(selector.title);
-            const linkElement = titleElement
-              ? titleElement.closest("a")
-              : element.querySelector(selector.link);
-            const snippetElement = element.querySelector(selector.snippet);
 
+            // Trouver le lien en priorisant celui proche du titre
+            let linkElement = null;
+            if (titleElement) {
+              // Chercher d'abord dans le parent du titre
+              const titleParent = titleElement.parentElement;
+              if (titleParent) {
+                linkElement =
+                  titleParent.closest("a") ||
+                  titleParent.querySelector("a[href]");
+              }
+
+              // Si toujours pas trouvé, chercher dans l'élément parent du conteneur
+              if (!linkElement) {
+                linkElement =
+                  titleElement.closest("a") ||
+                  element.querySelector(selector.link);
+              }
+            } else {
+              // Pas de titre trouvé, chercher directement un lien
+              linkElement = element.querySelector("a[href]");
+            }
+
+            // Chercher le snippet avec plusieurs sélecteurs possibles
+            const snippetSelectors = Array.isArray(selector.snippet)
+              ? selector.snippet
+              : selector.snippet.split(", ");
+
+            let snippetElement = null;
+
+            for (const snippetSelector of snippetSelectors) {
+              snippetElement = element.querySelector(snippetSelector);
+              if (
+                snippetElement &&
+                snippetElement.textContent.trim().length > 10
+              ) {
+                break;
+              }
+            }
+
+            // Vérification des conditions pour un résultat valide
             if (
               titleElement &&
               linkElement &&
               linkElement.href &&
               linkElement.href.startsWith("http") &&
-              !linkElement.href.includes("google.com/search")
+              !linkElement.href.includes("google.com/search") &&
+              !linkElement.href.includes("accounts.google.com") &&
+              !linkElement.href.includes("support.google.com")
             ) {
+              // Nettoyage du texte du titre (peut contenir des éléments invisibles)
+              const titleText = titleElement.textContent.trim();
+
               searchResults.push({
-                title: titleElement.textContent.trim(),
+                title: titleText,
                 url: linkElement.href,
                 description: snippetElement
-                  ? snippetElement.textContent.trim()
+                  ? snippetElement.textContent.trim().replace(/\s+/g, " ")
                   : "Pas de description disponible",
               });
             }
@@ -198,49 +226,51 @@ async function searchGoogle(query) {
         }
       }
 
-      // Approche 2 (fallback): Prendre tous les liens dans le conteneur de résultats
+      // Méthode de secours si aucun résultat n'est trouvé
       if (searchResults.length === 0) {
-        console.log("Utilisation de la méthode fallback pour Google");
-        const resultContainer =
-          document.querySelector("#search") ||
-          document.querySelector("#rso") ||
-          document.querySelector('div[role="main"]');
+        console.log("Utilisation de la méthode de secours pour Google");
 
-        if (resultContainer) {
-          const links = resultContainer.querySelectorAll(
-            'a[href^="http"]:not([href*="google.com/search"])'
-          );
+        // Chercher tous les liens valides avec texte
+        document
+          .querySelectorAll('a[href^="http"]:not([href*="google.com/"])')
+          .forEach((link) => {
+            // Vérifier si le lien a un texte substantiel et ressemble à un titre
+            if (link.textContent && link.textContent.trim().length > 15) {
+              // Chercher un h3 proche, ou utiliser le texte du lien comme titre
+              const nearH3 = link.querySelector("h3") || link.closest("h3");
 
-          links.forEach((link) => {
-            const headerTag = link.querySelector("h3") || link.closest("h3");
-
-            if (headerTag && link.textContent.trim().length > 5) {
-              // Chercher un potentiel snippet près du lien
-              let snippet = "";
+              // Chercher un paragraphe ou div avec du texte à proximité pour la description
+              let description = "Pas de description disponible";
               let parent = link.parentElement;
-              for (let i = 0; i < 3; i++) {
-                if (parent) {
-                  const snippetCandidate =
-                    parent.querySelector("div:not(:has(a))");
-                  if (
-                    snippetCandidate &&
-                    snippetCandidate.textContent.trim().length > 20
-                  ) {
-                    snippet = snippetCandidate.textContent.trim();
-                    break;
-                  }
-                  parent = parent.parentElement;
+
+              // Remonter jusqu'à 3 niveaux pour trouver une description
+              for (let i = 0; i < 3 && parent; i++) {
+                const possibleDesc =
+                  parent.querySelector("div:not(:has(a))") ||
+                  parent.querySelector("span:not(:has(a))") ||
+                  parent.querySelector("p");
+
+                if (
+                  possibleDesc &&
+                  possibleDesc.textContent.trim().length > 20
+                ) {
+                  description = possibleDesc.textContent
+                    .trim()
+                    .replace(/\s+/g, " ");
+                  break;
                 }
+                parent = parent.parentElement;
               }
 
               searchResults.push({
-                title: headerTag.textContent.trim(),
+                title: nearH3
+                  ? nearH3.textContent.trim()
+                  : link.textContent.trim(),
                 url: link.href,
-                description: snippet || "Pas de description disponible",
+                description: description,
               });
             }
           });
-        }
       }
 
       // Limiter à 20 résultats uniques par URL

@@ -27,8 +27,12 @@ async function getBrowser() {
       "--disable-features=site-per-process,TranslateUI",
       "--disable-accelerated-2d-canvas",
       "--disable-gpu",
+      "--lang=fr-FR,fr,en-US,en", // Spécifier la langue pour plus de cohérence
+      "--disable-extensions", // Désactiver les extensions pour éviter les interférences
+      "--mute-audio", // Couper le son
     ],
     ignoreHTTPSErrors: true,
+    defaultViewport: null, // Permettre au navigateur d'ajuster automatiquement la taille de la fenêtre
   });
 
   console.log("✅ Navigateur initialisé avec succès");
@@ -52,13 +56,25 @@ async function randomDelay(min = 1000, max = 5000) {
  * @returns {Promise<string>} User agent
  */
 async function getUserAgent() {
-  // Définir plusieurs user agents statiques fiables au lieu d'utiliser random-useragent
+  // Définir plusieurs user agents statiques fiables et mis à jour 2023-2024
   const userAgents = [
+    // Chrome sur Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    // Chrome sur Mac
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    // Firefox sur Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0",
+    // Firefox sur Mac
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:123.0) Gecko/20100101 Firefox/123.0",
+    // Safari sur Mac
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
+    // Chrome sur Linux
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    // Edge sur Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.2365.80",
   ];
 
   // Sélectionner un user agent aléatoire dans la liste
@@ -93,9 +109,56 @@ function decodeDuckDuckGoUrl(url) {
   return url;
 }
 
+/**
+ * Effectue un défilement aléatoire et naturel sur la page
+ * @param {Page} page - L'instance de page Puppeteer
+ * @returns {Promise<void>}
+ */
+async function humanScroll(page) {
+  await page.evaluate(() => {
+    return new Promise((resolve) => {
+      // Paramètres de défilement aléatoires
+      const totalScrolls = 3 + Math.floor(Math.random() * 5); // 3-7 défilements
+      let currentScroll = 0;
+
+      const scroll = () => {
+        if (currentScroll >= totalScrolls) {
+          resolve();
+          return;
+        }
+
+        // Distance aléatoire de défilement (plus humain)
+        const distance = 100 + Math.floor(Math.random() * 400);
+
+        // Vitesse aléatoire de défilement
+        const delay = 500 + Math.floor(Math.random() * 1000);
+
+        window.scrollBy(0, distance);
+        currentScroll++;
+
+        // Petite chance de remonter légèrement (comme un humain)
+        if (Math.random() > 0.7 && currentScroll > 1) {
+          setTimeout(() => {
+            window.scrollBy(0, -Math.floor(Math.random() * 100));
+            setTimeout(scroll, delay);
+          }, 300);
+        } else {
+          setTimeout(scroll, delay);
+        }
+      };
+
+      scroll();
+    });
+  });
+
+  // Pause après le défilement
+  await randomDelay(1000, 2000);
+}
+
 module.exports = {
   getBrowser,
   randomDelay,
   getUserAgent,
   decodeDuckDuckGoUrl,
+  humanScroll,
 };
