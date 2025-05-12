@@ -48,7 +48,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const query = queryInput.value.trim();
 
     if (!query) {
-      alert("Veuillez entrer un terme de recherche");
+      alert(
+        window.t
+          ? window.t("searchPlaceholder")
+          : "Veuillez entrer un terme de recherche"
+      );
       return;
     }
 
@@ -68,7 +72,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       if (!response.ok) {
-        throw new Error("Erreur lors de la recherche");
+        throw new Error(
+          window.t ? window.t("error") : "Erreur lors de la recherche"
+        );
       }
 
       const data = await response.json();
@@ -88,7 +94,11 @@ document.addEventListener("DOMContentLoaded", () => {
       loadSearchHistory();
     } catch (error) {
       console.error("Erreur:", error);
-      alert("Une erreur est survenue lors de la recherche");
+      alert(
+        window.t
+          ? window.t("error")
+          : "Une erreur est survenue lors de la recherche"
+      );
     } finally {
       // Cacher l'indicateur de chargement
       loadingIndicator.classList.add("hidden");
@@ -124,8 +134,11 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     if (!hasResults) {
-      resultsList.innerHTML =
-        '<p class="no-results">Aucun résultat trouvé pour cette recherche.</p>';
+      resultsList.innerHTML = `<p class="no-results">${
+        window.t
+          ? window.t("noResults")
+          : "Aucun résultat trouvé pour cette recherche."
+      }</p>`;
       return;
     }
 
@@ -150,7 +163,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const engineLabel = document.createElement("span");
     engineLabel.className = "result-engine";
-    engineLabel.textContent = engine.charAt(0).toUpperCase() + engine.slice(1);
+    engineLabel.textContent = window.t
+      ? window.t(engine)
+      : engine.charAt(0).toUpperCase() + engine.slice(1);
 
     const title = document.createElement("h3");
     title.textContent = result.title;
@@ -166,10 +181,19 @@ document.addEventListener("DOMContentLoaded", () => {
     description.className = "result-description";
     description.textContent = result.description;
 
+    // Ajouter un bouton "Visiter"
+    const visitButton = document.createElement("a");
+    visitButton.href = result.url;
+    visitButton.className = "visit-button";
+    visitButton.textContent = window.t ? window.t("visitLink") : "Visiter";
+    visitButton.target = "_blank";
+    visitButton.rel = "noopener noreferrer";
+
     resultItem.appendChild(engineLabel);
     resultItem.appendChild(title);
     resultItem.appendChild(url);
     resultItem.appendChild(description);
+    resultItem.appendChild(visitButton);
 
     return resultItem;
   }
@@ -193,7 +217,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/api/history");
 
       if (!response.ok) {
-        throw new Error("Erreur lors du chargement de l'historique");
+        throw new Error(
+          window.t
+            ? window.t("error")
+            : "Erreur lors du chargement de l'historique"
+        );
       }
 
       const data = await response.json();
@@ -202,7 +230,9 @@ document.addEventListener("DOMContentLoaded", () => {
       historyList.innerHTML = "";
 
       if (data.length === 0) {
-        historyList.innerHTML = "<p>Aucune recherche effectuée.</p>";
+        historyList.innerHTML = `<p>${
+          window.t ? window.t("noHistory") : "Aucune recherche effectuée."
+        }</p>`;
         return;
       }
 
@@ -229,19 +259,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const count = document.createElement("span");
         count.className = "history-count";
-        count.textContent = `${search.resultCount} résultats`;
+        // Traduire le message de comptage de résultats
+        const resultCountText = window.t
+          ? `${search.resultCount} ${window.t("resultsLabel")}`
+          : `${search.resultCount} résultats`;
+        count.textContent = resultCountText;
 
         const actionButtons = document.createElement("div");
         actionButtons.className = "history-actions";
 
         const viewButton = document.createElement("button");
         viewButton.className = "view-results";
-        viewButton.textContent = "Voir";
+        viewButton.textContent = window.t ? window.t("view") : "Voir";
         viewButton.addEventListener("click", () => loadResults(search.id));
 
         const deleteButton = document.createElement("button");
         deleteButton.className = "delete-search";
-        deleteButton.textContent = "Supprimer";
+        deleteButton.textContent = window.t ? window.t("delete") : "Supprimer";
         deleteButton.addEventListener("click", () => deleteSearch(search.id));
 
         actionButtons.appendChild(viewButton);
@@ -258,8 +292,11 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     } catch (error) {
       console.error("Erreur:", error);
-      historyList.innerHTML =
-        "<p>Erreur lors du chargement de l'historique.</p>";
+      historyList.innerHTML = `<p>${
+        window.t
+          ? window.t("error")
+          : "Erreur lors du chargement de l'historique."
+      }</p>`;
     }
   }
 
@@ -273,7 +310,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch(`/api/results/${searchId}`);
 
       if (!response.ok) {
-        throw new Error("Erreur lors du chargement des résultats");
+        throw new Error(
+          window.t
+            ? window.t("error")
+            : "Erreur lors du chargement des résultats"
+        );
       }
 
       const data = await response.json();
@@ -290,7 +331,11 @@ document.addEventListener("DOMContentLoaded", () => {
       resultsContainer.classList.add("active");
     } catch (error) {
       console.error("Erreur:", error);
-      alert("Une erreur est survenue lors du chargement des résultats");
+      alert(
+        window.t
+          ? window.t("error")
+          : "Une erreur est survenue lors du chargement des résultats"
+      );
     } finally {
       // Cacher l'indicateur de chargement
       loadingIndicator.classList.add("hidden");
@@ -299,7 +344,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Fonction pour supprimer une recherche
   async function deleteSearch(searchId) {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cette recherche ?")) {
+    const confirmMessage = window.t
+      ? window.t("confirmDelete")
+      : "Êtes-vous sûr de vouloir supprimer cette recherche ?";
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -309,7 +357,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       if (!response.ok) {
-        throw new Error("Erreur lors de la suppression");
+        throw new Error(
+          window.t ? window.t("error") : "Erreur lors de la suppression"
+        );
       }
 
       // Effet visuel de suppression
@@ -324,13 +374,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
           // Vérifier s'il reste des recherches
           if (historyList.querySelectorAll(".history-item").length === 0) {
-            historyList.innerHTML = "<p>Aucune recherche effectuée.</p>";
+            historyList.innerHTML = `<p>${
+              window.t ? window.t("noHistory") : "Aucune recherche effectuée."
+            }</p>`;
           }
         }, 500);
       }
     } catch (error) {
       console.error("Erreur:", error);
-      alert("Une erreur est survenue lors de la suppression");
+      alert(
+        window.t
+          ? window.t("error")
+          : "Une erreur est survenue lors de la suppression"
+      );
     }
   }
 });

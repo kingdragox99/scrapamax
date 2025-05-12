@@ -1,16 +1,27 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<%= getCurrentLanguage() %>">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scrapamax - Recherche multi-moteurs</title>
+    <title><%= t('appName') %> - <%= t('resultsFor') %></title>
     <link rel="stylesheet" href="/css/styles.css" />
   </head>
   <body>
     <div class="container">
       <header>
-        <h1>Scrapamax</h1>
-        <p>Recherchez un mot ou pseudo sur plusieurs moteurs de recherche</p>
+        <h1><%= t('appName') %></h1>
+        <p><%= t('searchPlaceholder') %></p>
+
+        <!-- Sélecteur de langue -->
+        <div class="language-selector">
+          <% const langs = getAvailableLanguages(); %> <% const currentLang =
+          getCurrentLanguage(); %> <% for (const [code, name] of
+          Object.entries(langs)) { %> <% if (code === currentLang) { %>
+          <span class="current-lang"><%= name %></span>
+          <% } else { %>
+          <a href="/language/<%= code %>" class="lang-link"><%= name %></a>
+          <% } %> <% } %>
+        </div>
       </header>
 
       <main>
@@ -21,24 +32,28 @@
                 type="text"
                 id="query"
                 name="query"
-                placeholder="Entrez un mot ou pseudo à rechercher..."
+                placeholder="<%= t('searchPlaceholder') %>"
                 required
               />
-              <button type="submit" id="search-button">Rechercher</button>
+              <button type="submit" id="search-button">
+                <%= t('searchButton') %>
+              </button>
             </div>
           </form>
           <div id="loading" class="loading hidden">
             <div class="spinner"></div>
-            <p>Recherche en cours sur tous les moteurs...</p>
+            <p><%= t('loading') %></p>
           </div>
         </section>
 
         <!-- Navigation principale -->
         <div class="main-tabs">
           <button class="main-tab-button active" data-tab="results">
-            Résultats
+            <%= t('home') %>
           </button>
-          <button class="main-tab-button" data-tab="history">Historique</button>
+          <button class="main-tab-button" data-tab="history">
+            <%= t('history') %>
+          </button>
         </div>
 
         <!-- Section des résultats -->
@@ -47,17 +62,27 @@
           id="results-container"
           data-tab-content="results"
         >
-          <h2>Résultats pour: <span id="search-term"></span></h2>
+          <h2><%= t('resultsFor') %>: <span id="search-term"></span></h2>
 
           <div class="tabs">
-            <button class="tab-button active" data-engine="all">Tous</button>
-            <button class="tab-button" data-engine="google">Google</button>
-            <button class="tab-button" data-engine="bing">Bing</button>
-            <button class="tab-button" data-engine="duckduckgo">
-              DuckDuckGo
+            <button class="tab-button active" data-engine="all">
+              <%= t('all') %>
             </button>
-            <button class="tab-button" data-engine="yandex">Yandex</button>
-            <button class="tab-button" data-engine="ecosia">Ecosia</button>
+            <button class="tab-button" data-engine="google">
+              <%= t('google') %>
+            </button>
+            <button class="tab-button" data-engine="bing">
+              <%= t('bing') %>
+            </button>
+            <button class="tab-button" data-engine="duckduckgo">
+              <%= t('duckduckgo') %>
+            </button>
+            <button class="tab-button" data-engine="yandex">
+              <%= t('yandex') %>
+            </button>
+            <button class="tab-button" data-engine="ecosia">
+              <%= t('ecosia') %>
+            </button>
           </div>
 
           <div id="results-list"></div>
@@ -69,25 +94,23 @@
           id="history-container"
           data-tab-content="history"
         >
-          <h2>Historique des recherches</h2>
-          <p class="history-tip">
-            Cliquez sur "Voir" pour afficher les résultats d'une recherche
-            précédente ou sur "Supprimer" pour la retirer de l'historique.
-          </p>
+          <h2><%= t('searchHistory') %></h2>
+          <p class="history-tip"><%= t('historyTip') %></p>
           <div id="history-list">
-            <p class="loading-message">Chargement de l'historique...</p>
+            <p class="loading-message"><%= t('loading') %></p>
           </div>
         </section>
       </main>
 
       <footer>
         <p>
-          &copy; <%= new Date().getFullYear();%> Scrapamax - Outil de recherche
-          multi-moteurs
+          &copy; <%= new Date().getFullYear();%> <%= t('appName') %> - <%=
+          t('footerText') %>
         </p>
       </footer>
     </div>
 
+    <script src="/js/translations.js"></script>
     <script src="/js/main.js"></script>
   </body>
 </html>

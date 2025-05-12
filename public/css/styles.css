@@ -433,3 +433,52 @@ footer {
     text-align: center;
   }
 }
+
+/* Sélecteur de langue */
+.language-selector {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  background-color: rgba(28, 28, 28, 0.8);
+  padding: 0.5rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.language-selector .current-lang {
+  font-weight: bold;
+  color: #ff8c00;
+}
+
+.language-selector .lang-link {
+  color: #ccc;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.language-selector .lang-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+/* Bouton Visiter */
+.visit-button {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 8px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: background-color 0.2s;
+}
+
+.visit-button:hover {
+  background-color: var(--primary-dark);
+}

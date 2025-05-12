@@ -121,4 +121,29 @@ router.delete("/history/:searchId", async (req, res) => {
   }
 });
 
+// Nouvelle route pour obtenir les traductions
+router.get("/translations/:lang", (req, res) => {
+  const lang = req.params.lang;
+  let translations;
+
+  try {
+    // Charger les traductions demandées
+    translations = require(`../locales/${lang}/translations`);
+    res.json(translations);
+  } catch (error) {
+    // Si la langue demandée n'existe pas, renvoyer les traductions anglaises
+    console.error(
+      `Traductions non trouvées pour ${lang}, utilisation de l'anglais par défaut`
+    );
+    try {
+      translations = require("../locales/en/translations");
+      res.json(translations);
+    } catch (err) {
+      res
+        .status(500)
+        .json({ error: "Erreur lors du chargement des traductions" });
+    }
+  }
+});
+
 module.exports = router;
