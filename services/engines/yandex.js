@@ -1,4 +1,5 @@
 const utils = require("./utils/index");
+const searchHelper = require("./utils/searchHelper");
 
 /**
  * Search on Yandex with Puppeteer
@@ -9,216 +10,181 @@ const utils = require("./utils/index");
  * @returns {Promise<Array>} Array of search results
  */
 async function searchYandex(query, options = {}) {
-  const { region = "global", language = "auto" } = options;
-
-  console.log(`\n🔍 Attempting Yandex search for: "${query}"`);
   let browser;
   try {
-    browser = await utils.getBrowser();
-    console.log("📝 Setting up Yandex page...");
-    const page = await browser.newPage();
+    // Initialisation avec searchHelper
+    const {
+      browser: initializedBrowser,
+      page,
+      region,
+      language,
+    } = await searchHelper.initSearch("Yandex", query, options);
+    browser = initializedBrowser;
 
-    // Hide Puppeteer/WebDriver signature for Yandex
-    await page.evaluateOnNewDocument(() => {
-      Object.defineProperty(navigator, "webdriver", {
-        get: () => false,
-      });
-      window.navigator.chrome = {
-        runtime: {},
+    // Créer l'URL Yandex spécifique à la région et langue (si fournies)
+    let yandexUrl = `https://yandex.com/search/?text=${encodeURIComponent(
+      query
+    )}`;
+
+    // Ajouter les paramètres de région si spécifiés
+    // Yandex utilise 'lr' pour région et interface
+    if (region && region !== "global") {
+      const regionMapping = {
+        ru: "213", // Moscou
+        fr: "20430", // France
+        us: "87", // États-Unis
+        uk: "114", // Royaume-Uni
+        de: "65", // Allemagne
+        tr: "983", // Turquie
+        ua: "143", // Ukraine
+        by: "149", // Biélorussie
+        kz: "159", // Kazakhstan
       };
-      const originalQuery = window.navigator.permissions.query;
-      window.navigator.permissions.query = (parameters) =>
-        parameters.name === "notifications"
-          ? Promise.resolve({ state: Notification.permission })
-          : originalQuery(parameters);
-    });
 
-    // Configure appropriate user agent for region/language
-    const userAgent = await utils.getUserAgent(region, language);
-    await page.setUserAgent(userAgent);
-    console.log(`🔒 User-Agent configured: ${userAgent.substring(0, 50)}...`);
-
-    // Configure random behaviors
-    await page.setViewport({
-      width: 1400 + Math.floor(Math.random() * 100),
-      height: 850 + Math.floor(Math.random() * 100),
-      deviceScaleFactor: 1,
-    });
-
-    console.log(`🌐 Navigating to Yandex...`);
-    // Navigate to Yandex and wait for page to load - use English interface
-    await page.goto(
-      `https://yandex.com/search/?text=${encodeURIComponent(query)}&lang=en`,
-      {
-        waitUntil: "networkidle2",
-        timeout: 30000, // Increase timeout as Yandex can be slow
+      const regionCode = regionMapping[region];
+      if (regionCode) {
+        yandexUrl += `&lr=${regionCode}`;
       }
-    );
-
-    console.log(`⏳ Waiting after Yandex page load...`);
-    // Longer pause for Yandex
-    await utils.randomDelay(3500, 6000);
-
-    console.log(`🍪 Checking Yandex popups and consent notices...`);
-    // Handle consent banners
-    try {
-      const selectors = [
-        'button[data-t="button:action"]',
-        ".button_type_action",
-        ".cookie-consent__button",
-        ".modal__close",
-      ];
-
-      for (const selector of selectors) {
-        if (await page.$(selector)) {
-          console.log(`🖱️ Yandex popup detected, clicking on ${selector}`);
-          await page.click(selector);
-          await page.waitForTimeout(2000);
-          break;
-        }
-      }
-    } catch (e) {
-      console.log("ℹ️ No Yandex popup to close or error:", e.message);
     }
 
-    console.log(`🖱️ Simulating scrolling to appear human on Yandex...`);
-    // Add random scrolling - more subtle on Yandex
-    await page.evaluate(() => {
-      const maxScrolls = 3 + Math.floor(Math.random() * 3); // 3-5 scrolls
-      let currentScroll = 0;
+    // Interface de langue
+    if (language && language !== "auto") {
+      // Yandex utilise 'lang' pour la langue d'interface
+      yandexUrl += `&lang=${language}`;
+    }
 
-      const scrollDown = () => {
-        if (currentScroll < maxScrolls) {
-          window.scrollBy(0, 150 + Math.random() * 250);
-          currentScroll++;
-          setTimeout(scrollDown, 500 + Math.random() * 1000);
-        }
-      };
-
-      scrollDown();
+    console.log(`🌐 Navigation vers Yandex...`);
+    await page.goto(yandexUrl, {
+      waitUntil: "domcontentloaded",
+      timeout: 40000,
     });
 
-    await utils.randomDelay(3000, 5000);
+    console.log(`⏳ Attente après chargement de la page...`);
+    await utils.randomDelay(1500, 3000);
 
-    console.log(`🔍 Extracting Yandex results...`);
-    // Extract results - try different selectors for Yandex
+    // Gestion des popups de consentement
+    const consentSelectors = [
+      ".button_view_primary", // Consentement nouveau design
+      "button.desktopn-button.i-bem", // Consentement vieux design
+      ".gdpr-popup button", // Popup GDPR
+      "button[data-t='button:action']", // Autre bouton d'action
+    ];
+    await searchHelper.handleConsentPopups(page, "Yandex", consentSelectors);
+
+    console.log(`🔍 Vérification pour CAPTCHA...`);
+    const captchaResolved = await utils.handleCaptcha(page, "Yandex");
+    if (captchaResolved) {
+      console.log("✅ CAPTCHA résolu, reprise de la recherche Yandex...");
+      await utils.randomDelay(2000, 3000);
+    }
+
+    console.log(`🖱️ Simulation de défilement pour paraître humain...`);
+    await utils.humanScroll(page);
+    await utils.randomDelay(1000, 2000);
+
+    console.log(`🔍 Extraction des résultats Yandex...`);
     const results = await page.evaluate(() => {
       const searchResults = [];
 
-      // Try different selectors as Yandex changes often
-      const selectors = [
-        {
-          container: ".serp-item",
-          title: ".OrganicTitle-Link",
-          snippet: ".OrganicText",
-        },
-        {
-          container: ".organic",
-          title: ".organic__url-text",
-          snippet: ".organic__content",
-        },
-        {
-          container: ".serp-item_type_search",
-          title: "a",
-          snippet: "div[class*='text']",
-        },
+      // Sélecteurs pour les résultats organiques
+      // Yandex utilise différentes structures selon la région et la langue
+      const resultSelectors = [
+        // Nouveau design Yandex (2023-2024)
+        "li.serp-item",
+        // Structure alternative récente
+        ".organic",
+        // Ancienne structure
+        ".search-result__item",
       ];
 
-      for (const selector of selectors) {
-        const elements = document.querySelectorAll(selector.container);
-        console.log(
-          `Trying with selector ${selector.container}: ${elements.length} elements found`
-        );
-
-        if (elements.length > 0) {
-          elements.forEach((element, index) => {
-            if (index < 20) {
-              // Increased to get more results
-              const titleElement = element.querySelector(selector.title);
-              const snippetElement = element.querySelector(selector.snippet);
-
-              if (titleElement) {
-                let url = titleElement.href;
-                // If URL is not complete, check if there's a data-url attribute
-                if (!url || url.startsWith("/")) {
-                  url =
-                    titleElement.getAttribute("data-url") ||
-                    element.querySelector('a[href^="http"]')?.href ||
-                    `https://yandex.com/search/?text=${encodeURIComponent(
-                      document.title.split("—")[0]
-                    )}`;
-                }
-
-                searchResults.push({
-                  title: titleElement.innerText,
-                  url: url,
-                  description: snippetElement
-                    ? snippetElement.innerText
-                    : "No description available",
-                });
-              }
-            }
-          });
-
-          if (searchResults.length > 0) {
-            break;
-          }
+      // Tester les différents sélecteurs
+      let resultElements = [];
+      for (const selector of resultSelectors) {
+        resultElements = document.querySelectorAll(selector);
+        if (resultElements.length > 0) {
+          console.log(
+            `Utilisation du sélecteur '${selector}' (${resultElements.length} résultats)`
+          );
+          break;
         }
       }
 
-      // If no results found, try an even more generic approach
-      if (searchResults.length === 0) {
-        const allLinks = document.querySelectorAll('a[href^="http"]');
-        let count = 0;
+      resultElements.forEach((element, index) => {
+        if (index < 20) {
+          // Limiter aux 20 premiers résultats
+          // Sélecteurs flexibles pour le titre et les URL
+          const titleElement =
+            element.querySelector(
+              "h2 a, .OrganicTitle a, .organic__url, .organic__title, .organic__title-link a, .Typo a"
+            ) ||
+            element.querySelector("div[role='heading'] a") ||
+            element.querySelector("a[target='_blank']");
 
-        allLinks.forEach((link) => {
-          if (
-            count < 20 &&
-            link.textContent &&
-            link.textContent.trim().length > 15
-          ) {
-            searchResults.push({
-              title: link.textContent.trim(),
-              url: link.href,
-              description: "Description not available, fallback extraction",
-            });
-            count++;
+          // Ne traiter que les éléments avec un titre
+          if (titleElement) {
+            // Extraire l'URL et le titre
+            const url = titleElement.href;
+            const title = titleElement.innerText.trim();
+
+            // Sélecteurs possibles pour la description
+            const snippetSelectors = [
+              ".extended-text, .organic__content, .text-container, .serp-item__text",
+              ".OrganicText, .organic__text, .extended-text",
+            ];
+
+            let description = "Pas de description disponible";
+            for (const selector of snippetSelectors) {
+              const snippetElement = element.querySelector(selector);
+              if (snippetElement) {
+                description = snippetElement.innerText
+                  .trim()
+                  .replace(/\s+/g, " ");
+                break;
+              }
+            }
+
+            // Vérifier si c'est un résultat valide
+            if (
+              url &&
+              url.startsWith("http") &&
+              !url.includes("yandex.") &&
+              !url.includes("webmaster.yandex")
+            ) {
+              searchResults.push({
+                title: title,
+                url: url,
+                description: description,
+              });
+            }
           }
-        });
-      }
+        }
+      });
 
       return searchResults;
     });
 
     console.log(
-      `🏁 Yandex extraction completed, ${results.length} results found`
+      `🏁 Extraction Yandex terminée, ${results.length} résultats trouvés`
     );
-    await browser.close();
+    await searchHelper.closeBrowser(browser);
 
     if (results.length === 0) {
-      console.log(`⚠️ No results found for Yandex`);
-      return [
-        {
-          title: `No Yandex results for "${query}"`,
-          url: `https://yandex.com/search/?text=${encodeURIComponent(query)}`,
-          description:
-            "Scraping worked but found no results. Possibly an error in CSS selectors or Yandex changed its HTML structure.",
-        },
-      ];
+      return await searchHelper.handleNoResults(
+        browser,
+        query,
+        "Yandex",
+        "https://yandex.com/search/?text="
+      );
     }
 
     return results;
   } catch (error) {
-    console.error(`❌ Error during Yandex search:`, error.message);
-    if (browser) await browser.close();
-
-    return [
-      {
-        title: "Yandex search error",
-        url: `https://yandex.com/search/?text=${encodeURIComponent(query)}`,
-        description: `Error during scraping: ${error.message}. Yandex is probably blocking automated requests.`,
-      },
-    ];
+    return searchHelper.handleSearchError(
+      error,
+      query,
+      "Yandex",
+      "https://yandex.com/search/?text="
+    );
   }
 }
 

@@ -204,9 +204,23 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to display search results
   function displayResults(data) {
     // Update interface
-    searchTermDisplay.textContent = data.query;
+    searchTermDisplay.textContent = data.query || "Recherche";
     resultsContainer.classList.remove("hidden");
     resultsList.innerHTML = "";
+
+    // Vérifier si data.results existe
+    if (!data.results) {
+      console.error(
+        "Erreur: Les résultats sont manquants dans la réponse",
+        data
+      );
+      resultsList.innerHTML = `<p class="no-results">${
+        window.t
+          ? window.t("error")
+          : "Une erreur est survenue lors du traitement des résultats."
+      }</p>`;
+      return;
+    }
 
     // Store engines used for this search
     window.allSearchEngines = data.results;
@@ -215,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const hasResults = data.scoredResults
       ? data.scoredResults.length > 0
       : Object.values(data.results).some(
-          (engineResults) => engineResults.length > 0
+          (engineResults) => engineResults && engineResults.length > 0
         );
 
     if (!hasResults) {
@@ -245,10 +259,12 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       // Old display (by engine) if scoredResults is not available
       for (const engine in data.results) {
-        data.results[engine].forEach((result) => {
-          const resultItem = createResultItem(result, engine);
-          resultsList.appendChild(resultItem);
-        });
+        if (data.results[engine] && Array.isArray(data.results[engine])) {
+          data.results[engine].forEach((result) => {
+            const resultItem = createResultItem(result, engine);
+            resultsList.appendChild(resultItem);
+          });
+        }
       }
     }
 

@@ -32,14 +32,32 @@ router.post("/search", async (req, res) => {
     });
 
     // Perform the search only on selected engines
-    const searchResult = await searchEngines.searchAllEngines(query, {
+    const results = await searchEngines.searchAllEngines(query, {
       engines,
       region,
       language,
     });
 
-    // Access the "results" object containing results by engine
-    const { results } = searchResult;
+    if (!results) {
+      console.error("Résultats de recherche non définis");
+      return res.status(500).json({
+        error: "Erreur de recherche",
+        query,
+        results: {},
+      });
+    }
+
+    // Assurons-nous que les résultats sont au bon format
+    const searchResult = {
+      searchId,
+      query,
+      results, // results est maintenant directement l'objet renvoyé par searchAllEngines
+      searchOptions: {
+        engines: engines.join(","),
+        region,
+        language,
+      },
+    };
 
     // Save results in the database
     for (const engine in results) {
@@ -60,22 +78,17 @@ router.post("/search", async (req, res) => {
     }
 
     // Apply scoring to results
-    const scoredData = scoring.processSearchResults({
-      searchId,
-      query,
-      results,
-      searchOptions: {
-        engines: engines.join(","),
-        region,
-        language,
-      },
-    });
+    const scoredData = scoring.processSearchResults(searchResult);
 
     // Return results with search ID and scores
     return res.json(scoredData);
   } catch (error) {
     console.error("Error during search:", error);
-    return res.status(500).json({ error: "Server error during search" });
+    return res.status(500).json({
+      error: "Server error during search",
+      query: req.body.query || "",
+      results: {},
+    });
   }
 });
 

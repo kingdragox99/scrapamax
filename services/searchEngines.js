@@ -4,7 +4,7 @@
  * but it redirects to the modular implementation in /engines
  */
 
-const { search } = require("./engines");
+const search = require("./engines");
 
 const searchEngines = {
   searchAllEngines: search,

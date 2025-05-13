@@ -12,6 +12,7 @@ const {
 } = require("./urlDecoder");
 const { randomDelay, humanScroll } = require("./humanBehavior");
 const { handleCaptcha } = require("./captchaHandler");
+const searchHelper = require("./searchHelper");
 
 // Export all utility functions
 module.exports = {
@@ -36,4 +37,7 @@ module.exports = {
 
   // CAPTCHA handling
   handleCaptcha,
+
+  // Search helper functions
+  searchHelper,
 };

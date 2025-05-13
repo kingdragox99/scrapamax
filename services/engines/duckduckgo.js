@@ -1,4 +1,5 @@
 const utils = require("./utils/index");
+const searchHelper = require("./utils/searchHelper");
 
 /**
  * Search on DuckDuckGo with Puppeteer
@@ -8,28 +9,19 @@ const utils = require("./utils/index");
  * @returns {Promise<Array>} Array of search results
  */
 async function searchDuckDuckGo(query, region, language) {
-  console.log(`\n🔍 Attempting DuckDuckGo search for: "${query}"`);
   let browser;
   try {
-    browser = await utils.getBrowser();
-    console.log("📝 Setting up DuckDuckGo page...");
-    const page = await browser.newPage();
+    // Initialisation avec searchHelper
+    const { browser: initializedBrowser, page } = await searchHelper.initSearch(
+      "DuckDuckGo",
+      query,
+      { region, language }
+    );
+    browser = initializedBrowser;
 
-    // Configure appropriate user agent for region/language
-    const userAgent = await utils.getUserAgent(region, language);
-    await page.setUserAgent(userAgent);
-    console.log(`🔒 User-Agent configured: ${userAgent.substring(0, 50)}...`);
-
-    // Configure random behaviors
-    await page.setViewport({
-      width: 1440 + Math.floor(Math.random() * 100),
-      height: 900 + Math.floor(Math.random() * 100),
-      deviceScaleFactor: 1,
-    });
-
-    console.log(`🌐 Navigating to DuckDuckGo...`);
-    // Navigate to DuckDuckGo and wait for page to load
-    // Use HTML interface which is more stable for scraping
+    console.log(`🌐 Navigation vers DuckDuckGo...`);
+    // Navigation vers DuckDuckGo et attente du chargement de la page
+    // Utiliser l'interface HTML qui est plus stable pour le scraping
     await page.goto(
       `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
       {
@@ -37,32 +29,32 @@ async function searchDuckDuckGo(query, region, language) {
       }
     );
 
-    console.log(`⏳ Waiting after page load...`);
-    // Short pause to avoid detection
+    console.log(`⏳ Attente après chargement de la page...`);
+    // Courte pause pour éviter la détection
     await utils.randomDelay();
 
-    console.log(`🔍 Extracting results...`);
-    // Extract results
+    console.log(`🔍 Extraction des résultats...`);
+    // Extraction des résultats
     const results = await page.evaluate(() => {
       const searchResults = [];
       const resultElements = document.querySelectorAll(".result");
 
       resultElements.forEach((element, index) => {
         if (index < 20) {
-          // Increased to get more results
+          // Augmenté pour obtenir plus de résultats
           const titleElement = element.querySelector(".result__title a");
           const snippetElement = element.querySelector(".result__snippet");
 
           if (titleElement) {
-            // Get raw URL
+            // Obtenir l'URL brute
             const rawUrl = titleElement.href;
 
             searchResults.push({
               title: titleElement.innerText,
-              url: rawUrl, // URL will be cleaned later
+              url: rawUrl, // L'URL sera nettoyée plus tard
               description: snippetElement
                 ? snippetElement.innerText
-                : "No description available",
+                : "Pas de description disponible",
             });
           }
         }
@@ -71,39 +63,32 @@ async function searchDuckDuckGo(query, region, language) {
       return searchResults;
     });
 
-    // Clean DuckDuckGo URLs
-    console.log(`🧹 Cleaning DuckDuckGo redirect URLs...`);
+    // Nettoyer les URLs DuckDuckGo
+    console.log(`🧹 Nettoyage des URLs de redirection DuckDuckGo...`);
     for (const result of results) {
       result.url = utils.decodeDuckDuckGoUrl(result.url);
     }
 
-    console.log(`🏁 Extraction completed, ${results.length} results found`);
-    await browser.close();
+    console.log(`🏁 Extraction terminée, ${results.length} résultats trouvés`);
+    await searchHelper.closeBrowser(browser);
 
     if (results.length === 0) {
-      console.log(`⚠️ No results found for DuckDuckGo`);
-      return [
-        {
-          title: `No DuckDuckGo results for "${query}"`,
-          url: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
-          description:
-            "Scraping worked but found no results. Possibly an error in CSS selectors or DuckDuckGo changed its HTML structure.",
-        },
-      ];
+      return await searchHelper.handleNoResults(
+        browser,
+        query,
+        "DuckDuckGo",
+        "https://duckduckgo.com/?q="
+      );
     }
 
     return results;
   } catch (error) {
-    console.error(`❌ Error during DuckDuckGo search:`, error.message);
-    if (browser) await browser.close();
-
-    return [
-      {
-        title: "DuckDuckGo search error",
-        url: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
-        description: `Error during scraping: ${error.message}.`,
-      },
-    ];
+    return searchHelper.handleSearchError(
+      error,
+      query,
+      "DuckDuckGo",
+      "https://duckduckgo.com/?q="
+    );
   }
 }
 
