@@ -5,12 +5,12 @@ const dbPath = path.join(__dirname, "data.db");
 const db = new sqlite3.Database(dbPath);
 
 /**
- * Initialise la base de données et applique les migrations nécessaires
+ * Initialize the database and apply necessary migrations
  */
 function initDatabase() {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
-      // Création de la table pour stocker les recherches
+      // Create table to store searches
       db.run(
         `CREATE TABLE IF NOT EXISTS searches (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +25,7 @@ function initDatabase() {
         }
       );
 
-      // Création de la table pour stocker les résultats
+      // Create table to store results
       db.run(
         `CREATE TABLE IF NOT EXISTS results (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +42,7 @@ function initDatabase() {
             return;
           }
 
-          // Appliquer les migrations pour ajouter les nouvelles colonnes
+          // Apply migrations to add new columns
           migrateDatabase()
             .then(() => {
               resolve();
@@ -57,53 +57,53 @@ function initDatabase() {
 }
 
 /**
- * Vérifie et ajoute les colonnes manquantes dans la base de données
+ * Check and add missing columns in the database
  */
 function migrateDatabase() {
   return new Promise((resolve, reject) => {
-    // Vérifier si les colonnes existent déjà
+    // Check if columns already exist
     db.get("PRAGMA table_info(searches)", (err, rows) => {
       if (err) {
         reject(err);
         return;
       }
 
-      // Exécuter les migrations dans une transaction
+      // Execute migrations in a transaction
       db.run("BEGIN TRANSACTION", (err) => {
         if (err) {
           reject(err);
           return;
         }
 
-        // Ajouter la colonne engines si elle n'existe pas
+        // Add engines column if it doesn't exist
         db.run(
           "ALTER TABLE searches ADD COLUMN engines TEXT DEFAULT 'google,bing,duckduckgo,yandex,ecosia,brave,baidu'",
           (err) => {
-            // Ignorer l'erreur si la colonne existe déjà
-            console.log("Migration: ajout de la colonne engines");
+            // Ignore error if column already exists
+            console.log("Migration: adding engines column");
 
-            // Ajouter la colonne region si elle n'existe pas
+            // Add region column if it doesn't exist
             db.run(
               "ALTER TABLE searches ADD COLUMN region TEXT DEFAULT 'global'",
               (err) => {
-                // Ignorer l'erreur si la colonne existe déjà
-                console.log("Migration: ajout de la colonne region");
+                // Ignore error if column already exists
+                console.log("Migration: adding region column");
 
-                // Ajouter la colonne language si elle n'existe pas
+                // Add language column if it doesn't exist
                 db.run(
                   "ALTER TABLE searches ADD COLUMN language TEXT DEFAULT 'auto'",
                   (err) => {
-                    // Ignorer l'erreur si la colonne existe déjà
-                    console.log("Migration: ajout de la colonne language");
+                    // Ignore error if column already exists
+                    console.log("Migration: adding language column");
 
-                    // Terminer la transaction
+                    // Finish the transaction
                     db.run("COMMIT", (err) => {
                       if (err) {
                         db.run("ROLLBACK");
                         reject(err);
                         return;
                       }
-                      console.log("✅ Migration de la base de données réussie");
+                      console.log("✅ Database migration successful");
                       resolve();
                     });
                   }
@@ -201,11 +201,11 @@ function getSearchResults(searchId) {
 
 function deleteSearch(searchId) {
   return new Promise((resolve, reject) => {
-    // Commencer une transaction pour s'assurer que tout est supprimé
+    // Start a transaction to ensure everything is deleted
     db.serialize(() => {
       db.run("BEGIN TRANSACTION");
 
-      // Supprimer d'abord les résultats associés (contrainte de clé étrangère)
+      // First delete associated results (foreign key constraint)
       db.run("DELETE FROM results WHERE search_id = ?", [searchId], (err) => {
         if (err) {
           db.run("ROLLBACK");
@@ -213,7 +213,7 @@ function deleteSearch(searchId) {
           return;
         }
 
-        // Ensuite supprimer la recherche
+        // Then delete the search
         db.run("DELETE FROM searches WHERE id = ?", [searchId], function (err) {
           if (err) {
             db.run("ROLLBACK");
@@ -222,7 +222,7 @@ function deleteSearch(searchId) {
           }
 
           db.run("COMMIT");
-          resolve(this.changes); // Retourne le nombre de lignes affectées
+          resolve(this.changes); // Returns the number of rows affected
         });
       });
     });

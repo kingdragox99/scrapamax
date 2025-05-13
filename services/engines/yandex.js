@@ -1,24 +1,24 @@
 const utils = require("./utils");
 
 /**
- * Recherche sur Yandex avec Puppeteer
- * @param {string} query - Le terme de recherche
- * @param {Object} options - Options de recherche
- * @param {string} options.region - Code de région pour la recherche
- * @param {string} options.language - Code de langue pour la recherche
- * @returns {Promise<Array>} Tableau des résultats de recherche
+ * Search on Yandex with Puppeteer
+ * @param {string} query - Search term
+ * @param {Object} options - Search options
+ * @param {string} options.region - Region code for search
+ * @param {string} options.language - Language code for search
+ * @returns {Promise<Array>} Array of search results
  */
 async function searchYandex(query, options = {}) {
   const { region = "global", language = "auto" } = options;
 
-  console.log(`\n🔍 Tentative de recherche Yandex pour: "${query}"`);
+  console.log(`\n🔍 Attempting Yandex search for: "${query}"`);
   let browser;
   try {
     browser = await utils.getBrowser();
-    console.log("📝 Configuration de la page Yandex...");
+    console.log("📝 Setting up Yandex page...");
     const page = await browser.newPage();
 
-    // Masquer la signature Puppeteer/WebDriver pour Yandex
+    // Hide Puppeteer/WebDriver signature for Yandex
     await page.evaluateOnNewDocument(() => {
       Object.defineProperty(navigator, "webdriver", {
         get: () => false,
@@ -33,34 +33,34 @@ async function searchYandex(query, options = {}) {
           : originalQuery(parameters);
     });
 
-    // Configurer un user agent approprié à la région/langue
+    // Configure appropriate user agent for region/language
     const userAgent = await utils.getUserAgent(region, language);
     await page.setUserAgent(userAgent);
-    console.log(`🔒 User-Agent configuré: ${userAgent.substring(0, 50)}...`);
+    console.log(`🔒 User-Agent configured: ${userAgent.substring(0, 50)}...`);
 
-    // Configurer des comportements aléatoires
+    // Configure random behaviors
     await page.setViewport({
       width: 1400 + Math.floor(Math.random() * 100),
       height: 850 + Math.floor(Math.random() * 100),
       deviceScaleFactor: 1,
     });
 
-    console.log(`🌐 Navigation vers Yandex...`);
-    // Naviguer vers Yandex et attendre que la page se charge - utiliser l'interface anglaise
+    console.log(`🌐 Navigating to Yandex...`);
+    // Navigate to Yandex and wait for page to load - use English interface
     await page.goto(
       `https://yandex.com/search/?text=${encodeURIComponent(query)}&lang=en`,
       {
         waitUntil: "networkidle2",
-        timeout: 30000, // Augmenter le timeout car Yandex peut être lent
+        timeout: 30000, // Increase timeout as Yandex can be slow
       }
     );
 
-    console.log(`⏳ Attente après chargement de la page Yandex...`);
-    // Pause plus longue pour Yandex
+    console.log(`⏳ Waiting after Yandex page load...`);
+    // Longer pause for Yandex
     await utils.randomDelay(3500, 6000);
 
-    console.log(`🍪 Vérification des popups et consentements Yandex...`);
-    // Gérer les bannières de consentement
+    console.log(`🍪 Checking Yandex popups and consent notices...`);
+    // Handle consent banners
     try {
       const selectors = [
         'button[data-t="button:action"]',
@@ -71,20 +71,18 @@ async function searchYandex(query, options = {}) {
 
       for (const selector of selectors) {
         if (await page.$(selector)) {
-          console.log(`🖱️ Popup Yandex détecté, clique sur ${selector}`);
+          console.log(`🖱️ Yandex popup detected, clicking on ${selector}`);
           await page.click(selector);
           await page.waitForTimeout(2000);
           break;
         }
       }
     } catch (e) {
-      console.log("ℹ️ Pas de popup Yandex à fermer ou erreur:", e.message);
+      console.log("ℹ️ No Yandex popup to close or error:", e.message);
     }
 
-    console.log(
-      `🖱️ Simulation de scrolling pour paraître humain sur Yandex...`
-    );
-    // Ajouter un scrolling aléatoire - plus subtil sur Yandex
+    console.log(`🖱️ Simulating scrolling to appear human on Yandex...`);
+    // Add random scrolling - more subtle on Yandex
     await page.evaluate(() => {
       const maxScrolls = 3 + Math.floor(Math.random() * 3); // 3-5 scrolls
       let currentScroll = 0;
@@ -102,12 +100,12 @@ async function searchYandex(query, options = {}) {
 
     await utils.randomDelay(3000, 5000);
 
-    console.log(`🔍 Extraction des résultats Yandex...`);
-    // Extraire les résultats - essayer différents sélecteurs pour Yandex
+    console.log(`🔍 Extracting Yandex results...`);
+    // Extract results - try different selectors for Yandex
     const results = await page.evaluate(() => {
       const searchResults = [];
 
-      // Essayer différents sélecteurs car Yandex change souvent
+      // Try different selectors as Yandex changes often
       const selectors = [
         {
           container: ".serp-item",
@@ -129,19 +127,19 @@ async function searchYandex(query, options = {}) {
       for (const selector of selectors) {
         const elements = document.querySelectorAll(selector.container);
         console.log(
-          `Essai avec sélecteur ${selector.container}: ${elements.length} éléments trouvés`
+          `Trying with selector ${selector.container}: ${elements.length} elements found`
         );
 
         if (elements.length > 0) {
           elements.forEach((element, index) => {
             if (index < 20) {
-              // Augmenté pour obtenir plus de résultats
+              // Increased to get more results
               const titleElement = element.querySelector(selector.title);
               const snippetElement = element.querySelector(selector.snippet);
 
               if (titleElement) {
                 let url = titleElement.href;
-                // Si l'URL n'est pas complète, vérifier s'il y a un attribut data-url
+                // If URL is not complete, check if there's a data-url attribute
                 if (!url || url.startsWith("/")) {
                   url =
                     titleElement.getAttribute("data-url") ||
@@ -156,7 +154,7 @@ async function searchYandex(query, options = {}) {
                   url: url,
                   description: snippetElement
                     ? snippetElement.innerText
-                    : "Pas de description disponible",
+                    : "No description available",
                 });
               }
             }
@@ -168,7 +166,7 @@ async function searchYandex(query, options = {}) {
         }
       }
 
-      // Si aucun résultat trouvé, essayer une approche encore plus générique
+      // If no results found, try an even more generic approach
       if (searchResults.length === 0) {
         const allLinks = document.querySelectorAll('a[href^="http"]');
         let count = 0;
@@ -182,7 +180,7 @@ async function searchYandex(query, options = {}) {
             searchResults.push({
               title: link.textContent.trim(),
               url: link.href,
-              description: "Description non disponible, extraction de secours",
+              description: "Description not available, fallback extraction",
             });
             count++;
           }
@@ -193,32 +191,32 @@ async function searchYandex(query, options = {}) {
     });
 
     console.log(
-      `🏁 Extraction Yandex terminée, ${results.length} résultats trouvés`
+      `🏁 Yandex extraction completed, ${results.length} results found`
     );
     await browser.close();
 
     if (results.length === 0) {
-      console.log(`⚠️ Aucun résultat trouvé pour Yandex`);
+      console.log(`⚠️ No results found for Yandex`);
       return [
         {
-          title: `Aucun résultat Yandex pour "${query}"`,
+          title: `No Yandex results for "${query}"`,
           url: `https://yandex.com/search/?text=${encodeURIComponent(query)}`,
           description:
-            "Le scraping a fonctionné mais n'a trouvé aucun résultat. Peut-être une erreur dans les sélecteurs CSS ou Yandex a changé sa structure HTML.",
+            "Scraping worked but found no results. Possibly an error in CSS selectors or Yandex changed its HTML structure.",
         },
       ];
     }
 
     return results;
   } catch (error) {
-    console.error(`❌ Erreur lors de la recherche Yandex:`, error.message);
+    console.error(`❌ Error during Yandex search:`, error.message);
     if (browser) await browser.close();
 
     return [
       {
-        title: "Erreur de recherche Yandex",
+        title: "Yandex search error",
         url: `https://yandex.com/search/?text=${encodeURIComponent(query)}`,
-        description: `Erreur lors du scraping: ${error.message}. Yandex bloque probablement les requêtes automatisées.`,
+        description: `Error during scraping: ${error.message}. Yandex is probably blocking automated requests.`,
       },
     ];
   }

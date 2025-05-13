@@ -4,7 +4,7 @@ const db = require("../database");
 const searchEngines = require("../services/searchEngines");
 const scoring = require("../scoring");
 
-// Route pour effectuer une recherche
+// Route to perform a search
 router.post("/search", async (req, res) => {
   try {
     const {
@@ -15,37 +15,35 @@ router.post("/search", async (req, res) => {
     } = req.body;
 
     if (!query || query.trim() === "") {
-      return res
-        .status(400)
-        .json({ error: "Le terme de recherche est requis" });
+      return res.status(400).json({ error: "Search term is required" });
     }
 
     if (engines.length === 0) {
       return res
         .status(400)
-        .json({ error: "Au moins un moteur de recherche est requis" });
+        .json({ error: "At least one search engine is required" });
     }
 
-    // Sauvegarder la recherche dans la base de données avec les options
+    // Save the search in the database with options
     const searchId = await db.saveSearch(query, {
       engines: engines.join(","),
       region,
       language,
     });
 
-    // Effectuer la recherche uniquement sur les moteurs sélectionnés
+    // Perform the search only on selected engines
     const searchResult = await searchEngines.searchAllEngines(query, {
       engines,
       region,
       language,
     });
 
-    // Accéder à l'objet "results" qui contient les résultats par moteur
+    // Access the "results" object containing results by engine
     const { results } = searchResult;
 
-    // Sauvegarder les résultats dans la base de données
+    // Save results in the database
     for (const engine in results) {
-      // Vérifier que results[engine] est un tableau valide et non vide
+      // Check that results[engine] is a valid and non-empty array
       if (Array.isArray(results[engine]) && results[engine].length > 0) {
         for (const result of results[engine]) {
           await db.saveResult(
@@ -57,11 +55,11 @@ router.post("/search", async (req, res) => {
           );
         }
       } else {
-        console.log(`Pas de résultats valides pour le moteur: ${engine}`);
+        console.log(`No valid results for engine: ${engine}`);
       }
     }
 
-    // Appliquer le scoring aux résultats
+    // Apply scoring to results
     const scoredData = scoring.processSearchResults({
       searchId,
       query,
@@ -73,39 +71,37 @@ router.post("/search", async (req, res) => {
       },
     });
 
-    // Retourner les résultats avec l'ID de recherche et les scores
+    // Return results with search ID and scores
     return res.json(scoredData);
   } catch (error) {
-    console.error("Erreur lors de la recherche:", error);
-    return res
-      .status(500)
-      .json({ error: "Erreur serveur lors de la recherche" });
+    console.error("Error during search:", error);
+    return res.status(500).json({ error: "Server error during search" });
   }
 });
 
-// Route pour récupérer l'historique des recherches
+// Route to retrieve search history
 router.get("/history", async (req, res) => {
   try {
     const history = await db.getSearchHistory();
     return res.json(history);
   } catch (error) {
-    console.error("Erreur lors de la récupération de l'historique:", error);
-    return res.status(500).json({ error: "Erreur serveur" });
+    console.error("Error retrieving history:", error);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
-// Route pour récupérer les résultats d'une recherche spécifique
+// Route to retrieve results for a specific search
 router.get("/results/:searchId", async (req, res) => {
   try {
     const { searchId } = req.params;
 
     if (!searchId) {
-      return res.status(400).json({ error: "ID de recherche requis" });
+      return res.status(400).json({ error: "Search ID required" });
     }
 
     const results = await db.getSearchResults(searchId);
 
-    // Organiser les résultats par moteur de recherche
+    // Organize results by search engine
     const organizedResults = {};
     let searchQuery = "";
 
@@ -121,7 +117,7 @@ router.get("/results/:searchId", async (req, res) => {
       });
     });
 
-    // Appliquer le scoring aux résultats
+    // Apply scoring to results
     const scoredData = scoring.processSearchResults({
       searchId,
       query: searchQuery,
@@ -130,57 +126,55 @@ router.get("/results/:searchId", async (req, res) => {
 
     return res.json(scoredData);
   } catch (error) {
-    console.error("Erreur lors de la récupération des résultats:", error);
-    return res.status(500).json({ error: "Erreur serveur" });
+    console.error("Error retrieving results:", error);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
-// Route pour supprimer une recherche et ses résultats
+// Route to delete a search and its results
 router.delete("/history/:searchId", async (req, res) => {
   try {
     const { searchId } = req.params;
 
     if (!searchId) {
-      return res.status(400).json({ error: "ID de recherche requis" });
+      return res.status(400).json({ error: "Search ID required" });
     }
 
     const rowsAffected = await db.deleteSearch(searchId);
 
     if (rowsAffected === 0) {
-      return res.status(404).json({ error: "Recherche non trouvée" });
+      return res.status(404).json({ error: "Search not found" });
     }
 
     return res.json({
       success: true,
-      message: "Recherche supprimée avec succès",
+      message: "Search successfully deleted",
     });
   } catch (error) {
-    console.error("Erreur lors de la suppression de la recherche:", error);
-    return res.status(500).json({ error: "Erreur serveur" });
+    console.error("Error deleting search:", error);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
-// Nouvelle route pour obtenir les traductions
+// New route to get translations
 router.get("/translations/:lang", (req, res) => {
   const lang = req.params.lang;
   let translations;
 
   try {
-    // Charger les traductions demandées
+    // Load requested translations
     translations = require(`../locales/${lang}/translations`);
     res.json(translations);
   } catch (error) {
-    // Si la langue demandée n'existe pas, renvoyer les traductions anglaises
+    // If requested language doesn't exist, return English translations
     console.error(
-      `Traductions non trouvées pour ${lang}, utilisation de l'anglais par défaut`
+      `Translations not found for ${lang}, using English as default`
     );
     try {
       translations = require("../locales/en/translations");
       res.json(translations);
     } catch (err) {
-      res
-        .status(500)
-        .json({ error: "Erreur lors du chargement des traductions" });
+      res.status(500).json({ error: "Error loading translations" });
     }
   }
 });

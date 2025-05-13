@@ -33,6 +33,7 @@ module.exports = {
   region: "Région",
   global: "Mondiale",
   automatic: "Automatique",
+  apply: "Appliquer",
 
   // Résultats
   resultsFor: "Résultats pour",

@@ -1,7 +1,7 @@
 /**
- * Service pour faire des recherches sur différents moteurs de recherche
- * Ce fichier est maintenu pour la compatibilité avec le reste de l'application
- * mais il redirige vers l'implémentation modulaire dans /engines
+ * Service for searching across different search engines
+ * This file is maintained for compatibility with the rest of the application
+ * but it redirects to the modular implementation in /engines
  */
 
 const { search } = require("./engines");

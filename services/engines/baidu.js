@@ -2,82 +2,80 @@ const puppeteer = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const utils = require("./utils");
 
-// Ajouter le plugin stealth pour éviter la détection
+// Add stealth plugin to avoid detection
 puppeteer.use(StealthPlugin());
 
 /**
- * Recherche sur Baidu avec Puppeteer
- * @param {string} query - Le terme de recherche
- * @param {string} region - La région
- * @param {string} language - La langue
- * @returns {Promise<Array>} Tableau des résultats de recherche
+ * Search on Baidu with Puppeteer
+ * @param {string} query - Search term
+ * @param {string} region - Region
+ * @param {string} language - Language
+ * @returns {Promise<Array>} Array of search results
  */
 async function searchBaidu(query, region, language) {
-  console.log(`\n🔍 Tentative de recherche Baidu pour: "${query}"`);
+  console.log(`\n🔍 Attempting Baidu search for: "${query}"`);
   let browser;
   try {
     browser = await utils.getBrowser();
-    console.log("📝 Configuration de la page Baidu...");
+    console.log("📝 Setting up Baidu page...");
     const page = await browser.newPage();
 
-    // Masquer la signature Puppeteer/WebDriver
+    // Hide Puppeteer/WebDriver signature
     await utils.setupBrowserAntiDetection(page);
 
-    // Configurer un user agent approprié à la région/langue
+    // Configure appropriate user agent for region/language
     const userAgent = await utils.getUserAgent(region, language);
     await page.setUserAgent(userAgent);
-    console.log(`🔒 User-Agent configuré: ${userAgent.substring(0, 50)}...`);
+    console.log(`🔒 User-Agent configured: ${userAgent.substring(0, 50)}...`);
 
-    // Configurer une taille d'écran aléatoire
+    // Configure random screen size
     await utils.setupRandomScreenSize(page);
 
-    console.log(`🌐 Navigation vers Baidu...`);
-    // Naviguer vers Baidu avec timeout augmenté
+    console.log(`🌐 Navigating to Baidu...`);
+    // Navigate to Baidu with increased timeout
     try {
       await page.goto(
         `https://www.baidu.com/s?ie=utf-8&wd=${encodeURIComponent(query)}`,
         {
-          waitUntil: "domcontentloaded", // Utiliser domcontentloaded au lieu de networkidle2
-          timeout: 60000, // Augmenter à 60 secondes
+          waitUntil: "domcontentloaded", // Use domcontentloaded instead of networkidle2
+          timeout: 60000, // Increase to 60 seconds
         }
       );
     } catch (navError) {
-      console.warn(
-        `⚠️ Problème lors de la navigation vers Baidu: ${navError.message}`
-      );
-      console.log("Tentative d'alternative avec une URL simplifiée...");
+      console.warn(`⚠️ Problem navigating to Baidu: ${navError.message}`);
+      console.log("Attempting alternative with simplified URL...");
 
-      // Tenter une approche alternative
+      // Try alternative approach
       try {
         await page.goto(`https://www.baidu.com/`, {
           waitUntil: "domcontentloaded",
           timeout: 45000,
         });
 
-        // Attendre que la page se charge
+        // Wait for page to load
         await utils.randomDelay(2000, 4000);
 
-        // Saisir la recherche dans le champ
+        // Enter search in field
         await page.type("#kw", query);
         await page.click("#su");
 
-        // Attendre que les résultats se chargent
+        // Wait for results to load
         await page.waitForSelector(".result", { timeout: 30000 }).catch(() => {
-          console.log("Sélecteur de résultats non trouvé, mais on continue");
+          console.log("Results selector not found, but continuing");
         });
       } catch (altError) {
         console.error(
-          `❌ L'approche alternative a également échoué: ${altError.message}`
+          `❌ Alternative approach also failed: ${altError.message}`
         );
-        throw navError; // Remonter l'erreur originale
+        throw navError; // Throw original error
       }
     }
 
-    console.log(`⏳ Attente après chargement de la page...`);
-    // Petite pause pour éviter la détection
+    console.log(`⏳ Waiting after page load...`);
+    // Short pause to avoid detection
     await utils.randomDelay(1000, 3000);
 
-    // Gérer les popups de consentement éventuels
+    // Handle possible consent popups
     try {
       const consentSelectors = [
         ".agree-btn",
@@ -88,45 +86,45 @@ async function searchBaidu(query, region, language) {
       for (const selector of consentSelectors) {
         const button = await page.$(selector);
         if (button) {
-          console.log(`🍪 Popup de consentement détecté, clic sur ${selector}`);
+          console.log(`🍪 Consent popup detected, clicking on ${selector}`);
           await button.click();
           await utils.randomDelay(1000, 2000);
           break;
         }
       }
     } catch (e) {
-      console.log("ℹ️ Pas de popup à fermer ou erreur:", e.message);
+      console.log("ℹ️ No popup to close or error:", e.message);
     }
 
-    // Vérifier si un CAPTCHA est présent et le faire résoudre par l'utilisateur si nécessaire
+    // Check if CAPTCHA is present and have user solve it if necessary
     const captchaResolved = await utils.handleCaptcha(page, "Baidu");
     if (captchaResolved) {
-      console.log("✅ CAPTCHA résolu, reprise de la recherche Baidu...");
-      // Attendre un peu après la résolution du CAPTCHA
+      console.log("✅ CAPTCHA solved, resuming Baidu search...");
+      // Wait a bit after solving CAPTCHA
       await utils.randomDelay(2000, 4000);
     }
 
-    console.log(`🖱️ Simulation de scrolling pour paraître humain...`);
+    console.log(`🖱️ Simulating scrolling to appear human...`);
     await utils.humanScroll(page);
     await utils.randomDelay(1000, 2000);
 
-    console.log(`🔍 Extraction des résultats Baidu...`);
+    console.log(`🔍 Extracting Baidu results...`);
     const results = await page.evaluate(() => {
       const searchResults = [];
 
-      // Sélecteurs pour les résultats de Baidu
+      // Selectors for Baidu results
       const resultElements = document.querySelectorAll(".c-container");
 
       resultElements.forEach((element) => {
-        // Extraire le titre
+        // Extract title
         const titleElement = element.querySelector(".t a, h3.c-title a");
         if (!titleElement) return;
 
         const title = titleElement.textContent.trim();
 
-        // Extraire l'URL
+        // Extract URL
         let url = titleElement.getAttribute("href");
-        // Baidu utilise parfois des redirections - essayer d'extraire la vraie URL
+        // Baidu sometimes uses redirects - try to extract the real URL
         const realUrlElement = element.querySelector(".c-showurl");
         if (realUrlElement) {
           const realUrl = realUrlElement.textContent.trim();
@@ -135,7 +133,7 @@ async function searchBaidu(query, region, language) {
           }
         }
 
-        // Extraire la description
+        // Extract description
         const descriptionElement = element.querySelector(".c-abstract");
         const description = descriptionElement
           ? descriptionElement.textContent.trim()
@@ -154,23 +152,23 @@ async function searchBaidu(query, region, language) {
     });
 
     console.log(
-      `🏁 Extraction Baidu terminée, ${results.length} résultats trouvés`
+      `🏁 Baidu extraction completed, ${results.length} results found`
     );
 
     if (results.length === 0) {
-      console.warn("⚠️ Aucun résultat trouvé pour Baidu");
+      console.warn("⚠️ No results found for Baidu");
     }
 
     return results;
   } catch (error) {
-    console.error("❌ Erreur lors de la recherche Baidu:", error);
+    console.error("❌ Error during Baidu search:", error);
     return [];
   } finally {
     if (browser) {
       try {
         await browser.close();
       } catch (e) {
-        console.error("Erreur lors de la fermeture du navigateur:", e);
+        console.error("Error closing browser:", e);
       }
     }
   }

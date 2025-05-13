@@ -16,7 +16,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
-app.use(cookieParser()); // Middleware pour gérer les cookies
+app.use(cookieParser()); // Middleware to handle cookies
 
 // Configuration de i18n
 app.use(

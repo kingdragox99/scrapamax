@@ -12,7 +12,7 @@
         <h1><%= t('appName') %></h1>
         <p><%= t('searchPlaceholder') %></p>
 
-        <!-- Sélecteur de langue -->
+        <!-- Language selector -->
         <div class="language-selector">
           <% const langs = getAvailableLanguages(); %> <% const currentLang =
           getCurrentLanguage(); %> <% for (const [code, name] of
@@ -54,7 +54,7 @@
           </div>
         </section>
 
-        <!-- Modale pour les options de recherche avancées -->
+        <!-- Modal for advanced search options -->
         <div id="advanced-search-modal" class="modal">
           <div class="modal-content">
             <div class="modal-header">
@@ -192,7 +192,7 @@
           </div>
         </div>
 
-        <!-- Navigation principale -->
+        <!-- Main navigation -->
         <div class="main-tabs">
           <button class="main-tab-button active" data-tab="results">
             <%= t('home') %>
@@ -202,7 +202,7 @@
           </button>
         </div>
 
-        <!-- Section des résultats -->
+        <!-- Results section -->
         <section
           class="results-section hidden"
           id="results-container"
@@ -240,7 +240,7 @@
           <div id="results-list"></div>
         </section>
 
-        <!-- Section de l'historique (maintenant dans un onglet) -->
+        <!-- History section (now in a tab) -->
         <section
           class="history-section"
           id="history-container"

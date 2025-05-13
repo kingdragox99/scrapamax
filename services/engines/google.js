@@ -2,35 +2,35 @@ const puppeteer = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const utils = require("./utils");
 
-// Ajouter le plugin stealth pour éviter la détection
+// Add stealth plugin to avoid detection
 puppeteer.use(StealthPlugin());
 
 /**
- * Recherche sur Google avec Puppeteer
- * @param {string} query - Le terme de recherche
- * @param {Object} options - Options de recherche
- * @param {string} options.region - Code de région pour la recherche
- * @param {string} options.language - Code de langue pour la recherche
- * @returns {Promise<Array>} Tableau des résultats de recherche
+ * Search on Google with Puppeteer
+ * @param {string} query - Search term
+ * @param {Object} options - Search options
+ * @param {string} options.region - Region code for search
+ * @param {string} options.language - Language code for search
+ * @returns {Promise<Array>} Array of search results
  */
 async function searchGoogle(query, options = {}) {
   const { region = "global", language = "auto" } = options;
 
-  console.log(`\n🔍 Tentative de recherche Google pour: "${query}"`);
-  console.log(`📍 Région: ${region}, 🌐 Langue: ${language}`);
+  console.log(`\n🔍 Attempting Google search for: "${query}"`);
+  console.log(`📍 Region: ${region}, 🌐 Language: ${language}`);
 
   let browser;
   try {
     browser = await utils.getBrowser();
-    console.log("📝 Configuration de la page Google...");
+    console.log("📝 Setting up Google page...");
     const page = await browser.newPage();
 
-    // Configurer un user agent approprié à la région/langue
+    // Configure an appropriate user agent for region/language
     const userAgent = await utils.getUserAgent(region, language);
     await page.setUserAgent(userAgent);
-    console.log(`🔒 User-Agent configuré: ${userAgent.substring(0, 50)}...`);
+    console.log(`🔒 User-Agent configured: ${userAgent.substring(0, 50)}...`);
 
-    // Configurer les paramètres de géolocalisation et langue
+    // Configure geolocation and language parameters
     await page.setExtraHTTPHeaders({
       "Accept-Language":
         language !== "auto"
@@ -38,18 +38,18 @@ async function searchGoogle(query, options = {}) {
           : "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
     });
 
-    // Configuration de la taille d'écran aléatoire
+    // Configure random screen size
     await utils.setupRandomScreenSize(page);
 
-    // Configuration anti-détection
+    // Anti-detection configuration
     await utils.setupBrowserAntiDetection(page);
 
-    // Construire l'URL avec les paramètres de région et langue si spécifiés
+    // Build URL with region and language parameters if specified
     let googleUrl = `https://www.google.com/search?q=${encodeURIComponent(
       query
     )}`;
 
-    // Ajouter les paramètres de région si spécifiés et non globaux
+    // Add region parameters if specified and not global
     if (region && region !== "global") {
       const regionMappings = {
         us: "US",
@@ -67,100 +67,100 @@ async function searchGoogle(query, options = {}) {
       googleUrl += `&gl=${countryCode}`;
     }
 
-    // Ajouter les paramètres de langue si spécifiés et non automatiques
+    // Add language parameters if specified and not automatic
     if (language && language !== "auto") {
       googleUrl += `&hl=${language}`;
     }
 
-    console.log(`🌐 Navigation vers Google avec les paramètres régionaux...`);
+    console.log(`🌐 Navigating to Google with regional parameters...`);
     console.log(`🔗 URL: ${googleUrl}`);
 
-    // Naviguer vers Google et attendre que la page se charge
+    // Navigate to Google and wait for page to load
     await page.goto(googleUrl, {
       waitUntil: "networkidle2",
     });
 
-    console.log(`⏳ Attente après chargement de la page...`);
-    // Petite pause pour éviter la détection
+    console.log(`⏳ Waiting after page load...`);
+    // Short pause to avoid detection
     await utils.randomDelay(2000, 4000);
 
-    // Vérifier la présence d'un CAPTCHA
+    // Check for a CAPTCHA
     const hasCaptcha = await utils.handleCaptcha(page, "Google");
     if (hasCaptcha) {
-      console.log(`✅ CAPTCHA résolu, reprise de la recherche Google...`);
+      console.log(`✅ CAPTCHA solved, resuming Google search...`);
       await utils.randomDelay(2000, 3000);
     }
 
-    console.log(`🍪 Vérification des popups et consentements...`);
-    // Gérer les bannières de consentement
+    console.log(`🍪 Checking for popups and consent notices...`);
+    // Handle consent banners
     try {
-      // Vérifier s'il y a une bannière de consentement
+      // Check if there's a consent banner
       const consentSelectors = [
-        "button.tHlp8d", // Bouton "J'accepte" sur la bannière de consentement
-        "#L2AGLb", // Bouton "J'accepte" (nouvelle version)
-        "[aria-label='Accepter tout']", // Bouton par aria-label
-        "form:nth-child(2) > div > div > button", // Pattern communément utilisé
+        "button.tHlp8d", // "I accept" button on consent banner
+        "#L2AGLb", // "I accept" button (new version)
+        "[aria-label='Accept all']", // Button by aria-label
+        "form:nth-child(2) > div > div > button", // Commonly used pattern
       ];
 
       for (const selector of consentSelectors) {
         if (await page.$(selector)) {
-          console.log(`🖱️ Popup détecté, clique sur ${selector}`);
+          console.log(`🖱️ Popup detected, clicking on ${selector}`);
           await page.click(selector);
           await page.waitForTimeout(1500);
           break;
         }
       }
     } catch (e) {
-      console.log("ℹ️ Pas de popup à fermer ou erreur:", e.message);
+      console.log("ℹ️ No popup to close or error:", e.message);
     }
 
-    console.log(`🔍 Vérification de la présence d'un CAPTCHA sur Google...`);
+    console.log(`🔍 Checking for CAPTCHA on Google...`);
     await utils.handleCaptcha(page, "Google");
 
-    console.log(`🖱️ Simulation de scrolling pour paraître humain...`);
-    // Ajouter un scrolling aléatoire
+    console.log(`🖱️ Simulating scrolling to appear human...`);
+    // Add random scrolling
     await utils.humanScroll(page);
 
     await utils.randomDelay(1000, 3000);
 
-    console.log(`🔍 Extraction des résultats Google...`);
-    // Extraire les résultats
+    console.log(`🔍 Extracting Google results...`);
+    // Extract results
     const results = await page.evaluate(() => {
-      console.log("Recherche des éléments dans la page Google...");
+      console.log("Searching for elements in Google page...");
 
       const searchResults = [];
 
-      // Plusieurs sélecteurs pour s'adapter aux changements de Google
+      // Multiple selectors to adapt to Google's changes
       const selectors = [
-        // Structure 2024 mise à jour
+        // 2024 updated structure
         {
           container: "div.v7W49e > div > div.MjjYud",
           title: "h3.LC20lb",
           link: ".yuRUbf > a",
           snippet: ".VwiC3b",
         },
-        // Structure 2024 alternative
+        // 2024 alternative structure
         {
           container: "div.g",
           title: "h3.LC20lb",
           link: "div.yuRUbf > a",
           snippet: "div.VwiC3b",
         },
-        // Structure pour les résultats enrichis
+        // Structure for rich results
         {
           container: "div.N54PNb",
           title: "h3.LC20lb",
           link: "a",
           snippet: ".VwiC3b, .k8XOCe",
         },
-        // Ancienne structure principale
+        // Old main structure
         {
           container: ".g",
           title: "h3",
           link: "a",
           snippet: ".VwiC3b, .st",
         },
-        // Autres structures de rechange
+        // Other backup structures
         {
           container: ".Gx5Zad",
           title: "h3",
@@ -175,24 +175,24 @@ async function searchGoogle(query, options = {}) {
         },
       ];
 
-      // Utiliser la console pour déboguer
+      // Use console for debugging
       const allH3 = document.querySelectorAll("h3");
-      console.log(`Nombre total de h3 dans la page: ${allH3.length}`);
+      console.log(`Total number of h3 in the page: ${allH3.length}`);
 
       document.querySelectorAll("div.g").forEach((el, i) => {
         console.log(
-          `Contenu div.g #${i + 1}:`,
+          `Content of div.g #${i + 1}:`,
           el.innerHTML.substring(0, 100) + "..."
         );
       });
 
-      // Essayer chaque ensemble de sélecteurs
+      // Try each set of selectors
       for (const selector of selectors) {
         const elements = document.querySelectorAll(selector.container);
 
         if (elements.length > 0) {
           console.log(
-            `Trouvé ${elements.length} résultats avec le sélecteur ${selector.container}`
+            `Found ${elements.length} results with selector ${selector.container}`
           );
 
           elements.forEach((element) => {
@@ -203,7 +203,7 @@ async function searchGoogle(query, options = {}) {
               : element.querySelector(selector.link);
             const snippetElement = element.querySelector(selector.snippet);
 
-            // Vérification des conditions pour un résultat valide
+            // Check conditions for a valid result
             if (
               titleElement &&
               linkElement &&
@@ -213,7 +213,7 @@ async function searchGoogle(query, options = {}) {
               !linkElement.href.includes("accounts.google.com") &&
               !linkElement.href.includes("support.google.com")
             ) {
-              // Nettoyage du texte du titre (peut contenir des éléments invisibles)
+              // Clean up title text (may contain invisible elements)
               const titleText = titleElement.textContent.trim();
 
               searchResults.push({
@@ -221,20 +221,20 @@ async function searchGoogle(query, options = {}) {
                 url: linkElement.href,
                 description: snippetElement
                   ? snippetElement.textContent.trim().replace(/\s+/g, " ")
-                  : "Pas de description disponible",
+                  : "No description available",
               });
             }
           });
         }
       }
 
-      // Si aucun résultat n'a été trouvé, essayer une méthode très générique
+      // If no results were found, try a very generic method
       if (searchResults.length === 0) {
         console.log(
-          "Aucun résultat trouvé avec les sélecteurs standard, essai de méthode alternative..."
+          "No results found with standard selectors, trying alternative method..."
         );
 
-        // Essayer une approche encore plus générique basée sur les liens
+        // Try an even more generic approach based on links
         const allLinks = Array.from(
           document.querySelectorAll('a[href^="http"]')
         ).filter((link) => {
@@ -248,10 +248,10 @@ async function searchGoogle(query, options = {}) {
           );
         });
 
-        console.log(`Trouvé ${allLinks.length} liens avec URLs externes`);
+        console.log(`Found ${allLinks.length} links with external URLs`);
 
         allLinks.forEach((link) => {
-          // Vérifier si ce lien a un titre h3 proche ou contient du texte significatif
+          // Check if this link has a nearby h3 title or contains significant text
           const parentDiv = link.closest("div");
           const nearestH3 = parentDiv ? parentDiv.querySelector("h3") : null;
           const title = nearestH3
@@ -261,19 +261,19 @@ async function searchGoogle(query, options = {}) {
             : null;
 
           if (title) {
-            // Chercher du texte descriptif autour du lien
+            // Look for descriptive text around the link
             let description = "";
             if (parentDiv) {
-              // Essayer de trouver un paragraphe ou div contenant du texte
+              // Try to find a paragraph or div containing text
               const textNodes = Array.from(
                 parentDiv.querySelectorAll("div, span, p")
               ).filter((el) => {
                 const text = el.textContent.trim();
                 return (
-                  text.length > 30 && // Assez long pour être une description
-                  !text.includes(title) && // Ne contient pas le titre (dupliqué)
+                  text.length > 30 && // Long enough to be a description
+                  !text.includes(title) && // Doesn't contain the title (duplicated)
                   !el.querySelector("h3")
-                ); // Ne contient pas un h3
+                ); // Doesn't contain an h3
               });
 
               if (textNodes.length > 0) {
@@ -286,42 +286,42 @@ async function searchGoogle(query, options = {}) {
             searchResults.push({
               title: title,
               url: link.href,
-              description: description || "Pas de description disponible",
+              description: description || "No description available",
             });
           }
         });
       }
 
-      return searchResults.slice(0, 20); // Limiter à 20 résultats
+      return searchResults.slice(0, 20); // Limit to 20 results
     });
 
     console.log(
-      `🏁 Extraction Google terminée, ${results.length} résultats trouvés`
+      `🏁 Google extraction completed, ${results.length} results found`
     );
     await browser.close();
 
     if (results.length === 0) {
-      console.log(`⚠️ Aucun résultat trouvé pour Google`);
+      console.log(`⚠️ No results found for Google`);
       return [
         {
-          title: `Aucun résultat Google pour "${query}"`,
+          title: `No Google results for "${query}"`,
           url: `https://www.google.com/search?q=${encodeURIComponent(query)}`,
           description:
-            "Le scraping a fonctionné mais n'a trouvé aucun résultat. Peut-être une erreur dans les sélecteurs CSS ou Google a changé sa structure HTML.",
+            "Scraping worked but found no results. Possibly an error in CSS selectors or Google changed its HTML structure.",
         },
       ];
     }
 
     return results;
   } catch (error) {
-    console.error(`❌ Erreur lors de la recherche Google:`, error.message);
+    console.error(`❌ Error during Google search:`, error.message);
     if (browser) await browser.close();
 
     return [
       {
-        title: "Erreur de recherche Google",
+        title: "Google search error",
         url: `https://www.google.com/search?q=${encodeURIComponent(query)}`,
-        description: `Erreur lors du scraping: ${error.message}. Google bloque probablement les requêtes automatisées.`,
+        description: `Error during scraping: ${error.message}. Google is probably blocking automated requests.`,
       },
     ];
   }

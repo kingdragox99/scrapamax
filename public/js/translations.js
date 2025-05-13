@@ -1,21 +1,21 @@
 /**
- * Module de gestion des traductions côté client
+ * Client-side translations management module
  */
 
-// Stocker les traductions actuelles
+// Store current translations
 let currentTranslations = {};
 let currentLanguage = "en";
 
-// Charger les traductions au démarrage
+// Load translations on startup
 document.addEventListener("DOMContentLoaded", async () => {
-  // Détecter la langue actuelle
+  // Detect current language
   currentLanguage = document.documentElement.lang || "en";
 
   try {
-    // Charger les traductions pour la langue actuelle
+    // Load translations for current language
     await loadTranslations(currentLanguage);
 
-    // Observer les changements d'attribut de langue sur le document
+    // Observe changes to the lang attribute on the document
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.attributeName === "lang") {
@@ -28,41 +28,38 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     });
 
-    // Configurer et démarrer l'observateur
+    // Configure and start the observer
     observer.observe(document.documentElement, { attributes: true });
   } catch (error) {
-    console.error("Erreur lors du chargement des traductions:", error);
+    console.error("Error loading translations:", error);
   }
 });
 
 /**
- * Charger les traductions depuis le serveur
- * @param {string} lang - Code de langue
+ * Load translations from the server
+ * @param {string} lang - Language code
  */
 async function loadTranslations(lang) {
   try {
     const response = await fetch(`/api/translations/${lang}`);
     if (!response.ok) {
-      throw new Error(`Erreur HTTP: ${response.status}`);
+      throw new Error(`HTTP Error: ${response.status}`);
     }
 
     currentTranslations = await response.json();
 
-    // Mettre à jour les éléments statiques de la page
+    // Update static page elements
     updatePageTranslations();
   } catch (error) {
-    console.error(
-      `Erreur lors du chargement des traductions (${lang}):`,
-      error
-    );
+    console.error(`Error loading translations (${lang}):`, error);
   }
 }
 
 /**
- * Mettre à jour les éléments statiques de la page avec les traductions
+ * Update static page elements with translations
  */
 function updatePageTranslations() {
-  // Mettre à jour les éléments qui ont un attribut data-i18n
+  // Update elements with data-i18n attribute
   document.querySelectorAll("[data-i18n]").forEach((element) => {
     const key = element.getAttribute("data-i18n");
     if (currentTranslations[key]) {
@@ -72,15 +69,15 @@ function updatePageTranslations() {
 }
 
 /**
- * Obtenir une traduction par sa clé
- * @param {string} key - Clé de traduction
- * @param {Object} replacements - Variables à remplacer
- * @returns {string} - Texte traduit
+ * Get a translation by its key
+ * @param {string} key - Translation key
+ * @param {Object} replacements - Variables to replace
+ * @returns {string} - Translated text
  */
 function t(key, replacements = {}) {
   let text = currentTranslations[key] || key;
 
-  // Remplacer les variables dans la chaîne
+  // Replace variables in the string
   if (text.includes("{}") && Object.keys(replacements).length > 0) {
     const values = Object.values(replacements);
     let i = 0;
@@ -90,6 +87,6 @@ function t(key, replacements = {}) {
   return text;
 }
 
-// Exporter les fonctions pour une utilisation globale
+// Export functions for global use
 window.t = t;
 window.loadTranslations = loadTranslations;

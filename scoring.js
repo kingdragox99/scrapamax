@@ -1,19 +1,19 @@
 /**
- * Module de scoring des résultats de recherche
- * Score de 1.0 à 5.0 basé sur la présence dans différents moteurs
+ * Result scoring module
+ * Score from 1.0 to 5.0 based on presence in different search engines
  */
 
 /**
- * Normalise une URL pour comparaison (supprime les paramètres de tracking, etc.)
- * @param {string} url - URL à normaliser
- * @returns {string} URL normalisée
+ * Normalizes a URL for comparison (removes tracking parameters, etc.)
+ * @param {string} url - URL to normalize
+ * @returns {string} Normalized URL
  */
 function normalizeUrl(url) {
   try {
-    // Créer un objet URL pour manipuler facilement les composants
+    // Create a URL object to easily manipulate components
     const urlObj = new URL(url);
 
-    // Suppression des paramètres de suivi courants
+    // Remove common tracking parameters
     const paramsToRemove = [
       "utm_source",
       "utm_medium",
@@ -33,63 +33,61 @@ function normalizeUrl(url) {
       urlObj.searchParams.delete(param);
     });
 
-    // Normaliser le hostname (supprimer www.)
+    // Normalize hostname (remove www.)
     urlObj.hostname = urlObj.hostname.replace(/^www\./, "");
 
-    // Retourner l'URL sans le hash fragment
+    // Return URL without hash fragment
     return `${urlObj.origin}${urlObj.pathname}${urlObj.search}`;
   } catch (e) {
-    // En cas d'URL invalide, retourner l'original
-    console.log(`Erreur lors de la normalisation de l'URL: ${e.message}`);
+    // In case of invalid URL, return the original
+    console.log(`Error normalizing URL: ${e.message}`);
     return url;
   }
 }
 
 /**
- * Calcule le score d'un résultat en fonction de sa présence dans différents moteurs
- * @param {Object} allResults - Tous les résultats de recherche
- * @returns {Array} Résultats scorés et triés
+ * Calculates the score of a result based on its presence across different engines
+ * @param {Object} allResults - All search results
+ * @returns {Array} Scored and sorted results
  */
 function scoreResults(allResults) {
-  // Création d'une map pour stocker les résultats uniques par URL normalisée
+  // Create a map to store unique results by normalized URL
   const resultMap = new Map();
 
-  // Obtenir le nombre total de moteurs utilisés
+  // Get total number of engines used
   const totalEngines = Object.keys(allResults).length;
 
-  // Parcourir tous les moteurs de recherche
+  // Loop through all search engines
   for (const engine in allResults) {
     const results = allResults[engine];
 
-    // Vérifier que results est bien un tableau
+    // Check that results is an array
     if (!Array.isArray(results)) {
-      console.log(
-        `Avertissement: les résultats pour "${engine}" ne sont pas un tableau, ignorés`
-      );
+      console.log(`Warning: results for "${engine}" are not an array, ignored`);
       continue;
     }
 
-    // Parcourir les résultats du moteur actuel
+    // Loop through the results of the current engine
     results.forEach((result) => {
-      // Normaliser l'URL pour la comparaison
+      // Normalize URL for comparison
       const normalizedUrl = normalizeUrl(result.url);
 
       if (resultMap.has(normalizedUrl)) {
-        // Si l'URL existe déjà, mettre à jour l'entrée existante
+        // If URL already exists, update existing entry
         const existingEntry = resultMap.get(normalizedUrl);
 
-        // Vérifier si ce moteur est déjà dans la liste des moteurs
+        // Check if this engine is already in the engines list
         if (!existingEntry.engines.includes(engine)) {
           existingEntry.engines.push(engine);
-          // Ne mettre à jour le score que si c'est un nouveau moteur
-          // Calculer le score en fonction du nombre de moteurs (sur 5)
+          // Only update score if it's a new engine
+          // Calculate score based on number of engines (out of 5)
           existingEntry.rawScore = existingEntry.engines.length;
-          // Score basé directement sur le nombre de moteurs (sur 5)
+          // Score based directly on number of engines (out of 5)
           existingEntry.score = Math.min(5.0, existingEntry.engines.length);
-          existingEntry.score = parseFloat(existingEntry.score.toFixed(1)); // Arrondir à 1 décimale
+          existingEntry.score = parseFloat(existingEntry.score.toFixed(1)); // Round to 1 decimal place
         }
 
-        // Garder le titre et la description les plus longs
+        // Keep the longest title and description
         if (result.title.length > existingEntry.title.length) {
           existingEntry.title = result.title;
         }
@@ -97,26 +95,26 @@ function scoreResults(allResults) {
           existingEntry.description = result.description;
         }
       } else {
-        // Calculer le score initial (1.0 pour un seul moteur)
-        // Créer une nouvelle entrée pour cette URL
+        // Calculate initial score (1.0 for a single engine)
+        // Create a new entry for this URL
         resultMap.set(normalizedUrl, {
           ...result,
           engines: [engine],
           normalizedUrl: normalizedUrl,
-          rawScore: 1, // Score brut (nombre de moteurs)
-          score: 1.0, // Score normalisé entre 1.0 et 5.0
+          rawScore: 1, // Raw score (number of engines)
+          score: 1.0, // Normalized score between 1.0 and 5.0
         });
       }
     });
   }
 
-  // Convertir la map en tableau et trier par score (décroissant)
+  // Convert map to array and sort by score (descending)
   const scoredResults = Array.from(resultMap.values()).sort((a, b) => {
-    // Trier d'abord par score
+    // Sort first by score
     if (b.score !== a.score) {
       return b.score - a.score;
     }
-    // En cas d'égalité, trier par ordre alphabétique du titre
+    // In case of a tie, sort alphabetically by title
     return a.title.localeCompare(b.title);
   });
 
@@ -124,12 +122,12 @@ function scoreResults(allResults) {
 }
 
 /**
- * Obtient les 3 principaux moteurs qui ont trouvé ce résultat (pour l'affichage)
- * @param {Array<string>} engines - Liste des moteurs ayant trouvé le résultat
- * @returns {Array<string>} Top 3 des moteurs (ou moins si moins de 3 moteurs)
+ * Gets the top 3 engines that found this result (for display)
+ * @param {Array<string>} engines - List of engines that found the result
+ * @returns {Array<string>} Top 3 engines (or fewer if less than 3 engines)
  */
 function getTopEngines(engines) {
-  // Ordre de priorité des moteurs (pour l'affichage)
+  // Priority order of engines (for display)
   const priority = {
     google: 1,
     bing: 2,
@@ -138,30 +136,30 @@ function getTopEngines(engines) {
     ecosia: 5,
   };
 
-  // Trier les moteurs par priorité
+  // Sort engines by priority
   const sortedEngines = [...engines].sort((a, b) => {
     return (priority[a] || 99) - (priority[b] || 99);
   });
 
-  // Retourner au maximum 3 moteurs
+  // Return a maximum of 3 engines
   return sortedEngines.slice(0, 3);
 }
 
 /**
- * Ajoute des informations de scoring à tous les résultats
- * @param {Object} searchData - L'objet de données de recherche complet
- * @returns {Object} Données de recherche avec scoring
+ * Adds scoring information to all results
+ * @param {Object} searchData - The complete search data object
+ * @returns {Object} Search data with scoring
  */
 function processSearchResults(searchData) {
-  // Vérifier que les données de recherche sont valides
+  // Check that search data is valid
   if (!searchData || !searchData.results) {
     return searchData;
   }
 
-  // Calculer les scores des résultats
+  // Calculate result scores
   const scoredResults = scoreResults(searchData.results);
 
-  // Ajouter les résultats scorés à l'objet de recherche
+  // Add scored results to the search object
   const enhancedData = {
     ...searchData,
     scoredResults: scoredResults,

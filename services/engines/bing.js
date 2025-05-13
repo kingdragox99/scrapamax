@@ -1,37 +1,37 @@
 const utils = require("./utils");
 
 /**
- * Recherche sur Bing avec Puppeteer
- * @param {string} query - Le terme de recherche
- * @param {Object} options - Options de recherche
- * @param {string} options.region - Code de région pour la recherche
- * @param {string} options.language - Code de langue pour la recherche
- * @returns {Promise<Array>} Tableau des résultats de recherche
+ * Search on Bing with Puppeteer
+ * @param {string} query - Search term
+ * @param {Object} options - Search options
+ * @param {string} options.region - Region code for search
+ * @param {string} options.language - Language code for search
+ * @returns {Promise<Array>} Array of search results
  */
 async function searchBing(query, options = {}) {
   const { region = "global", language = "auto" } = options;
 
-  console.log(`\n🔍 Tentative de recherche Bing pour: "${query}"`);
+  console.log(`\n🔍 Attempting Bing search for: "${query}"`);
   let browser;
   try {
     browser = await utils.getBrowser();
-    console.log("📝 Configuration de la page Bing...");
+    console.log("📝 Setting up Bing page...");
     const page = await browser.newPage();
 
-    // Configurer un user agent approprié à la région/langue
+    // Configure appropriate user agent for region/language
     const userAgent = await utils.getUserAgent(region, language);
     await page.setUserAgent(userAgent);
-    console.log(`🔒 User-Agent configuré: ${userAgent.substring(0, 50)}...`);
+    console.log(`🔒 User-Agent configured: ${userAgent.substring(0, 50)}...`);
 
-    // Configurer des comportements aléatoires
+    // Configure random behaviors
     await page.setViewport({
       width: 1366 + Math.floor(Math.random() * 100),
       height: 768 + Math.floor(Math.random() * 100),
       deviceScaleFactor: 1,
     });
 
-    console.log(`🌐 Navigation vers Bing...`);
-    // Naviguer vers Bing et attendre que la page se charge
+    console.log(`🌐 Navigating to Bing...`);
+    // Navigate to Bing and wait for page to load
     await page.goto(
       `https://www.bing.com/search?q=${encodeURIComponent(query)}`,
       {
@@ -39,12 +39,12 @@ async function searchBing(query, options = {}) {
       }
     );
 
-    console.log(`⏳ Attente après chargement de la page...`);
-    // Petite pause pour éviter la détection
+    console.log(`⏳ Waiting after page load...`);
+    // Short pause to avoid detection
     await utils.randomDelay(2000, 4000);
 
-    console.log(`🍪 Vérification des popups et consentements...`);
-    // Gérer les bannières de consentement
+    console.log(`🍪 Checking for popups and consent notices...`);
+    // Handle consent banners
     try {
       const selectors = [
         "#bnp_btn_accept",
@@ -54,33 +54,33 @@ async function searchBing(query, options = {}) {
 
       for (const selector of selectors) {
         if (await page.$(selector)) {
-          console.log(`🖱️ Popup détecté, clique sur ${selector}`);
+          console.log(`🖱️ Popup detected, clicking on ${selector}`);
           await page.click(selector);
           await page.waitForTimeout(1500);
           break;
         }
       }
     } catch (e) {
-      console.log("ℹ️ Pas de popup à fermer ou erreur:", e.message);
+      console.log("ℹ️ No popup to close or error:", e.message);
     }
 
-    console.log(`🖱️ Simulation de scrolling pour paraître humain...`);
-    // Ajouter un scrolling aléatoire
+    console.log(`🖱️ Simulating scrolling to appear human...`);
+    // Add random scrolling
     await page.evaluate(() => {
       window.scrollBy(0, 200 + Math.random() * 300);
     });
 
     await utils.randomDelay(1000, 3000);
 
-    console.log(`🔍 Extraction des résultats...`);
-    // Extraire les résultats
+    console.log(`🔍 Extracting results...`);
+    // Extract results
     const results = await page.evaluate(() => {
       const searchResults = [];
       const resultElements = document.querySelectorAll(".b_algo");
 
       resultElements.forEach((element, index) => {
         if (index < 20) {
-          // Augmenté pour obtenir plus de résultats
+          // Increased to get more results
           const titleElement = element.querySelector("h2 a");
           const snippetElement = element.querySelector(".b_caption p");
 
@@ -90,7 +90,7 @@ async function searchBing(query, options = {}) {
               url: titleElement.href,
               description: snippetElement
                 ? snippetElement.innerText
-                : "Pas de description disponible",
+                : "No description available",
             });
           }
         }
@@ -99,37 +99,37 @@ async function searchBing(query, options = {}) {
       return searchResults;
     });
 
-    console.log(`🔗 Décodage des URLs de redirection Bing...`);
-    // Décoder les URLs de redirection Bing
+    console.log(`🔗 Decoding Bing redirect URLs...`);
+    // Decode Bing redirect URLs
     for (const result of results) {
       result.url = utils.decodeBingUrl(result.url);
     }
 
-    console.log(`🏁 Extraction terminée, ${results.length} résultats trouvés`);
+    console.log(`🏁 Extraction completed, ${results.length} results found`);
     await browser.close();
 
     if (results.length === 0) {
-      console.log(`⚠️ Aucun résultat trouvé pour Bing`);
+      console.log(`⚠️ No results found for Bing`);
       return [
         {
-          title: `Aucun résultat Bing pour "${query}"`,
+          title: `No Bing results for "${query}"`,
           url: `https://www.bing.com/search?q=${encodeURIComponent(query)}`,
           description:
-            "Le scraping a fonctionné mais n'a trouvé aucun résultat. Peut-être une erreur dans les sélecteurs CSS ou Bing a changé sa structure HTML.",
+            "Scraping worked but found no results. Possibly an error in CSS selectors or Bing changed its HTML structure.",
         },
       ];
     }
 
     return results;
   } catch (error) {
-    console.error(`❌ Erreur lors de la recherche Bing:`, error.message);
+    console.error(`❌ Error during Bing search:`, error.message);
     if (browser) await browser.close();
 
     return [
       {
-        title: "Erreur de recherche Bing",
+        title: "Bing search error",
         url: `https://www.bing.com/search?q=${encodeURIComponent(query)}`,
-        description: `Erreur lors du scraping: ${error.message}. Bing bloque probablement les requêtes automatisées.`,
+        description: `Error during scraping: ${error.message}. Bing is probably blocking automated requests.`,
       },
     ];
   }

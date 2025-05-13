@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Éléments DOM
+  // DOM Elements
   const searchForm = document.getElementById("search-form");
   const queryInput = document.getElementById("query");
   const searchButton = document.getElementById("search-button");
@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const tabButtons = document.querySelectorAll(".tab-button");
   const mainTabButtons = document.querySelectorAll(".main-tab-button");
 
-  // Éléments pour les options de recherche avancées
+  // Elements for advanced search options
   const advancedSearchButton = document.getElementById(
     "advanced-search-button"
   );
@@ -29,56 +29,56 @@ document.addEventListener("DOMContentLoaded", () => {
   const regionSelect = document.getElementById("region");
   const languageSelect = document.getElementById("search-language");
 
-  // Afficher/Cacher la modale des options de recherche avancées
+  // Show/Hide the advanced search options modal
   if (advancedSearchButton) {
     advancedSearchButton.addEventListener("click", () => {
       advancedSearchModal.style.display = "block";
     });
   }
 
-  // Fermer la modale en cliquant sur le X
+  // Close modal when clicking on X
   if (closeModalButton) {
     closeModalButton.addEventListener("click", () => {
       advancedSearchModal.style.display = "none";
     });
   }
 
-  // Fermer la modale en cliquant en dehors de son contenu
+  // Close modal when clicking outside its content
   window.addEventListener("click", (event) => {
     if (event.target === advancedSearchModal) {
       advancedSearchModal.style.display = "none";
     }
   });
 
-  // Appliquer les options et fermer la modale
+  // Apply options and close the modal
   if (applyAdvancedOptionsButton) {
     applyAdvancedOptionsButton.addEventListener("click", () => {
       advancedSearchModal.style.display = "none";
     });
   }
 
-  // Sélectionner tous les moteurs
+  // Select all engines
   selectAllEnginesButton.addEventListener("click", () => {
     engineCheckboxes.forEach((checkbox) => {
       checkbox.checked = true;
     });
   });
 
-  // Désélectionner tous les moteurs
+  // Deselect all engines
   deselectAllEnginesButton.addEventListener("click", () => {
     engineCheckboxes.forEach((checkbox) => {
       checkbox.checked = false;
     });
   });
 
-  // Gestion des onglets principaux
+  // Main tabs management
   mainTabButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      // Mise à jour de l'onglet actif
+      // Update active tab
       mainTabButtons.forEach((btn) => btn.classList.remove("active"));
       button.classList.add("active");
 
-      // Afficher le contenu correspondant
+      // Show corresponding content
       const tabName = button.dataset.tab;
       document.querySelectorAll("[data-tab-content]").forEach((content) => {
         content.classList.remove("active");
@@ -93,15 +93,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Initialisation : activer l'onglet historique par défaut
+  // Initialization: activate the history tab by default
   document
     .querySelector('[data-tab-content="history"]')
     .classList.add("active");
 
-  // Charger l'historique des recherches au chargement de la page
+  // Load search history when page loads
   loadSearchHistory();
 
-  // Gestionnaire pour le formulaire de recherche
+  // Handler for the search form
   searchForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const query = queryInput.value.trim();
@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Vérifier qu'au moins un moteur est sélectionné
+    // Check that at least one engine is selected
     const selectedEngines = Array.from(engineCheckboxes)
       .filter((checkbox) => checkbox.checked)
       .map((checkbox) => checkbox.value);
@@ -129,17 +129,17 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Récupérer les options de région et langue
+    // Get region and language options
     const region = regionSelect.value;
     const language = languageSelect.value;
 
-    // Afficher l'indicateur de chargement
+    // Show loading indicator
     loadingIndicator.classList.remove("hidden");
     searchButton.disabled = true;
     resultsContainer.classList.add("hidden");
 
     try {
-      // Envoyer la requête au serveur avec les options avancées
+      // Send request to server with advanced options
       const response = await fetch("/api/search", {
         method: "POST",
         headers: {
@@ -161,10 +161,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await response.json();
 
-      // Afficher les résultats
+      // Display results
       displayResults(data);
 
-      // Basculer vers l'onglet des résultats
+      // Switch to results tab
       mainTabButtons.forEach((btn) => btn.classList.remove("active"));
       document.querySelector('[data-tab="results"]').classList.add("active");
       document.querySelectorAll("[data-tab-content]").forEach((content) => {
@@ -172,7 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       resultsContainer.classList.add("active");
 
-      // Rafraîchir l'historique des recherches
+      // Refresh search history
       loadSearchHistory();
     } catch (error) {
       console.error("Erreur:", error);
@@ -182,36 +182,36 @@ document.addEventListener("DOMContentLoaded", () => {
           : "Une erreur est survenue lors de la recherche"
       );
     } finally {
-      // Cacher l'indicateur de chargement
+      // Hide loading indicator
       loadingIndicator.classList.add("hidden");
       searchButton.disabled = false;
     }
   });
 
-  // Gestionnaire pour les onglets de moteurs de recherche
+  // Handler for search engine tabs
   tabButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      // Mise à jour de l'onglet actif
+      // Update active tab
       tabButtons.forEach((btn) => btn.classList.remove("active"));
       button.classList.add("active");
 
-      // Filtrer les résultats par moteur de recherche
+      // Filter results by search engine
       const engine = button.dataset.engine;
       filterResultsByEngine(engine);
     });
   });
 
-  // Fonction pour afficher les résultats de recherche
+  // Function to display search results
   function displayResults(data) {
-    // Mise à jour de l'interface
+    // Update interface
     searchTermDisplay.textContent = data.query;
     resultsContainer.classList.remove("hidden");
     resultsList.innerHTML = "";
 
-    // Stocker les moteurs utilisés pour cette recherche
+    // Store engines used for this search
     window.allSearchEngines = data.results;
 
-    // Utiliser les résultats scorés si disponibles, sinon utiliser les résultats par moteur
+    // Use scored results if available, otherwise use results by engine
     const hasResults = data.scoredResults
       ? data.scoredResults.length > 0
       : Object.values(data.results).some(
@@ -227,9 +227,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Afficher les résultats scorés s'ils sont disponibles
+    // Display scored results if available
     if (data.scoredResults && data.scoredResults.length > 0) {
-      // Créer un élément pour le nombre total de résultats uniques
+      // Create element for total unique results
       const totalResultsInfo = document.createElement("div");
       totalResultsInfo.className = "total-results-info";
       totalResultsInfo.textContent = window.t
@@ -237,13 +237,13 @@ document.addEventListener("DOMContentLoaded", () => {
         : `${data.totalUniqueResults} résultats uniques trouvés`;
       resultsList.appendChild(totalResultsInfo);
 
-      // Afficher tous les résultats scorés
+      // Display all scored results
       data.scoredResults.forEach((result) => {
         const resultItem = createScoredResultItem(result);
         resultsList.appendChild(resultItem);
       });
     } else {
-      // Ancien affichage (par moteur) si scoredResults n'est pas disponible
+      // Old display (by engine) if scoredResults is not available
       for (const engine in data.results) {
         data.results[engine].forEach((result) => {
           const resultItem = createResultItem(result, engine);
@@ -252,19 +252,19 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // Réinitialiser l'onglet actif
+    // Reset active tab
     tabButtons.forEach((btn) => btn.classList.remove("active"));
     document.querySelector('[data-engine="all"]').classList.add("active");
 
-    // Mettre à jour les onglets de moteur pour n'afficher que les moteurs utilisés
+    // Update engine tabs to show only used engines
     updateEnginesTabs(Object.keys(data.results));
   }
 
-  // Fonction pour mettre à jour les onglets de moteurs en fonction des moteurs utilisés
+  // Function to update engine tabs based on used engines
   function updateEnginesTabs(usedEngines) {
     tabButtons.forEach((button) => {
       const engine = button.dataset.engine;
-      if (engine === "all") return; // Toujours afficher l'onglet "Tous"
+      if (engine === "all") return; // Always show "All" tab
 
       if (usedEngines.includes(engine)) {
         button.style.display = "block";
@@ -274,24 +274,24 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Fonction pour créer un élément de résultat scoré
+  // Function to create a scored result item
   function createScoredResultItem(result) {
     const resultItem = document.createElement("div");
     resultItem.className = "result-item scored-result";
     resultItem.dataset.engines = result.engines.join(",");
 
-    // Création du badge de score avec tooltip
+    // Create score badge with tooltip
     const scoreLabel = document.createElement("div");
     scoreLabel.className = "result-score";
     scoreLabel.title = window.t
       ? `${window.t("scoreTooltip")} - ${result.rawScore}/${
           Object.keys(window.allSearchEngines).length
-        } moteurs`
+        } engines`
       : `Score de 1.0 a 5.0 - ${result.rawScore}/${
           Object.keys(window.allSearchEngines).length
         } moteurs`;
 
-    // Déterminer la classe de score en fonction de la valeur (1.0 à 5.0)
+    // Determine score class based on value (1.0 to 5.0)
     let scoreClass = "";
     if (result.score >= 4.0) {
       scoreClass = "score-high"; // 4.0-5.0
@@ -304,15 +304,15 @@ document.addEventListener("DOMContentLoaded", () => {
     scoreLabel.classList.add(scoreClass);
     scoreLabel.textContent = `${result.score}`;
 
-    // Afficher les moteurs qui ont trouvé ce résultat
+    // Display engines that found this result
     const enginesLabel = document.createElement("div");
     enginesLabel.className = "result-engines";
 
-    // Afficher le nombre de moteurs ayant trouvé ce résultat (max 5)
+    // Display number of engines that found this result (max 5)
     const enginesCount = document.createElement("span");
     enginesCount.className = "engines-count";
 
-    // Récupérer le nombre total de moteurs disponibles
+    // Get total number of available engines
     const totalEnginesCount = Object.keys(
       window.allSearchEngines || {
         google: true,
@@ -323,14 +323,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     ).length;
 
-    // Limiter le affichage au nombre total de moteurs
+    // Limit display to total number of engines
     enginesCount.textContent = `${Math.min(
       result.rawScore,
       totalEnginesCount
     )}/${totalEnginesCount}`;
     enginesLabel.appendChild(enginesCount);
 
-    // Dédupliquer les moteurs avant de créer les badges
+    // Deduplicate engines before creating badges
     const uniqueEngines = [...new Set(result.engines)];
 
     uniqueEngines.forEach((engine) => {
@@ -355,7 +355,7 @@ document.addEventListener("DOMContentLoaded", () => {
     description.className = "result-description";
     description.textContent = result.description;
 
-    // Ajouter un bouton "Visiter"
+    // Add a "Visit" button
     const visitButton = document.createElement("a");
     visitButton.href = result.url;
     visitButton.className = "visit-button";
@@ -363,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
     visitButton.target = "_blank";
     visitButton.rel = "noopener noreferrer";
 
-    // Wrapper pour le score et les moteurs
+    // Wrapper for score and engines
     const metaInfoWrapper = document.createElement("div");
     metaInfoWrapper.className = "result-meta-info";
     metaInfoWrapper.appendChild(scoreLabel);
@@ -378,7 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return resultItem;
   }
 
-  // Fonction pour créer un élément de résultat (ancienne version)
+  // Function to create a result item (old version)
   function createResultItem(result, engine) {
     const resultItem = document.createElement("div");
     resultItem.className = "result-item";
@@ -404,7 +404,7 @@ document.addEventListener("DOMContentLoaded", () => {
     description.className = "result-description";
     description.textContent = result.description;
 
-    // Ajouter un bouton "Visiter"
+    // Add a "Visit" button
     const visitButton = document.createElement("a");
     visitButton.href = result.url;
     visitButton.className = "visit-button";
@@ -421,9 +421,9 @@ document.addEventListener("DOMContentLoaded", () => {
     return resultItem;
   }
 
-  // Fonction pour filtrer les résultats par moteur de recherche
+  // Function to filter results by search engine
   function filterResultsByEngine(engine) {
-    // L'onglet "Tous" montre tous les résultats
+    // "All" tab shows all results
     if (engine === "all") {
       document.querySelectorAll(".result-item").forEach((item) => {
         item.style.display = "block";
@@ -431,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Logique pour les résultats scorés
+    // Logic for scored results
     const scoredResults = document.querySelectorAll(".scored-result");
     if (scoredResults.length > 0) {
       scoredResults.forEach((item) => {
@@ -445,7 +445,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Ancien filtrage par attribut data-engine pour les résultats non scorés
+    // Old filtering by data-engine attribute for unscored results
     document.querySelectorAll(".result-item").forEach((item) => {
       if (item.dataset.engine === engine) {
         item.style.display = "block";
@@ -455,7 +455,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Fonction pour charger l'historique des recherches
+  // Function to load search history
   async function loadSearchHistory() {
     try {
       const response = await fetch("/api/history");
@@ -470,7 +470,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await response.json();
 
-      // Mise à jour de l'interface
+      // Update interface
       historyList.innerHTML = "";
 
       if (data.length === 0) {
@@ -503,7 +503,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const count = document.createElement("span");
         count.className = "history-count";
-        // Traduire le message de comptage de résultats
+        // Translate result count message
         const resultCountText = window.t
           ? `${search.resultCount} ${window.t("resultsLabel")}`
           : `${search.resultCount} résultats`;
@@ -544,9 +544,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Fonction pour charger les résultats d'une recherche spécifique de l'historique
+  // Function to load results from a specific search in history
   async function loadResults(searchId) {
-    // Afficher l'indicateur de chargement
+    // Show loading indicator
     loadingIndicator.classList.remove("hidden");
     resultsContainer.classList.add("hidden");
 
@@ -563,10 +563,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await response.json();
 
-      // Afficher les résultats
+      // Display results
       displayResults(data);
 
-      // Basculer vers l'onglet des résultats
+      // Switch to results tab
       mainTabButtons.forEach((btn) => btn.classList.remove("active"));
       document.querySelector('[data-tab="results"]').classList.add("active");
       document.querySelectorAll("[data-tab-content]").forEach((content) => {
@@ -581,12 +581,12 @@ document.addEventListener("DOMContentLoaded", () => {
           : "Une erreur est survenue lors du chargement des résultats"
       );
     } finally {
-      // Cacher l'indicateur de chargement
+      // Hide loading indicator
       loadingIndicator.classList.add("hidden");
     }
   }
 
-  // Fonction pour supprimer une recherche de l'historique
+  // Function to delete a search from history
   async function deleteSearch(searchId) {
     const confirmMessage = window.t
       ? window.t("confirmDelete")
@@ -606,17 +606,17 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
 
-      // Effet visuel de suppression
+      // Visual deletion effect
       const historyItem = document.querySelector(
         `.history-item[data-search-id="${searchId}"]`
       );
       if (historyItem) {
         historyItem.classList.add("fade-out");
-        // Enlever l'élément après l'animation
+        // Remove element after animation
         setTimeout(() => {
           historyItem.remove();
 
-          // Vérifier s'il reste des recherches
+          // Check if there are any searches left
           if (historyList.querySelectorAll(".history-item").length === 0) {
             historyList.innerHTML = `<p>${
               window.t ? window.t("noHistory") : "Aucune recherche effectuée."

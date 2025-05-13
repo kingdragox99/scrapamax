@@ -1,31 +1,31 @@
 /* Variables */
 :root {
-  --primary-color: #ff7f00; /* Orange vif */
-  --primary-dark: #e56717; /* Orange plus foncé */
-  --secondary-color: #5a4d43; /* Brun foncé */
-  --text-color: #f0f0f0; /* Texte clair pour fond sombre - augmenté pour meilleur contraste */
-  --text-secondary: #d0d0d0; /* Texte secondaire plus visible */
-  --dark-bg: #1c1c1c; /* Fond principal très sombre */
-  --dark-bg-secondary: #252525; /* Fond secondaire sombre */
-  --border-color: #3d3d3d; /* Bordures sombres */
-  --card-bg: #2c2c2c; /* Fond des cartes/résultats */
-  --modal-header-bg: #353535; /* Fond du header modal plus distinct */
-  --modal-body-bg: #2a2a2a; /* Fond du corps de la modale */
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3); /* Ombre plus prononcée pour le thème sombre */
-  --radius: 2px; /* Coins moins arrondis pour un style plus épuré */
-  --danger-color: #e74c3c; /* Rouge pour les actions de suppression */
-  --danger-dark: #c0392b; /* Rouge plus foncé pour le hover */
-  --checkbox-bg: #383838; /* Fond pour les cases à cocher */
+  --primary-color: #ff7f00; /* Bright orange */
+  --primary-dark: #e56717; /* Darker orange */
+  --secondary-color: #5a4d43; /* Dark brown */
+  --text-color: #f0f0f0; /* Light text for dark background - increased for better contrast */
+  --text-secondary: #d0d0d0; /* More visible secondary text */
+  --dark-bg: #1c1c1c; /* Very dark main background */
+  --dark-bg-secondary: #252525; /* Dark secondary background */
+  --border-color: #3d3d3d; /* Dark borders */
+  --card-bg: #2c2c2c; /* Cards/results background */
+  --modal-header-bg: #353535; /* More distinct modal header background */
+  --modal-body-bg: #2a2a2a; /* Modal body background */
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3); /* More pronounced shadow for dark theme */
+  --radius: 2px; /* Less rounded corners for a cleaner style */
+  --danger-color: #e74c3c; /* Red for deletion actions */
+  --danger-dark: #c0392b; /* Darker red for hover */
+  --checkbox-bg: #383838; /* Background for checkboxes */
   --checkbox-selected-bg: rgba(
     255,
     127,
     0,
     0.2
-  ); /* Fond des cases à cocher sélectionnées */
-  --button-text: #ffffff; /* Texte des boutons plus contrasté */
+  ); /* Background for selected checkboxes */
+  --button-text: #ffffff; /* More contrasted button text */
 }
 
-/* Reset et styles de base */
+/* Reset and basic styles */
 * {
   margin: 0;
   padding: 0;
@@ -33,7 +33,7 @@
 }
 
 body {
-  font-family: "Helvetica Neue", Arial, sans-serif; /* Police Swiss Design */
+  font-family: "Helvetica Neue", Arial, sans-serif; /* Swiss Design font */
   line-height: 1.6;
   color: var(--text-color);
   background-color: var(--dark-bg);
@@ -45,12 +45,12 @@ body {
   padding: 20px;
 }
 
-/* En-tête */
+/* Header */
 header {
   text-align: center;
   margin-bottom: 40px;
   padding: 30px 0;
-  border-bottom: 2px solid var(--primary-color); /* Bordure orange distinctive */
+  border-bottom: 2px solid var(--primary-color); /* Distinctive orange border */
 }
 
 header h1 {
@@ -58,10 +58,10 @@ header h1 {
   font-size: 3rem;
   font-weight: 700;
   margin-bottom: 10px;
-  letter-spacing: -1px; /* Espacement négatif pour un look moderne */
+  letter-spacing: -1px; /* Negative spacing for a modern look */
 }
 
-/* Section de recherche */
+/* Search section */
 .search-section {
   margin-bottom: 30px;
 }
@@ -91,7 +91,7 @@ input[type="text"] {
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 600;
-  text-transform: uppercase; /* Texte en majuscules pour style suisse */
+  text-transform: uppercase; /* Uppercase text for Swiss style */
   letter-spacing: 1px;
   transition: background-color 0.3s;
 }
@@ -100,7 +100,7 @@ input[type="text"] {
   background-color: var(--primary-dark);
 }
 
-/* Bouton d'options avancées */
+/* Advanced options button */
 .advanced-button {
   background-color: var(--secondary-color);
   color: white;
@@ -121,7 +121,7 @@ input[type="text"] {
   font-size: 18px;
 }
 
-/* Styles pour la modale */
+/* Modal styles */
 .modal {
   display: none;
   position: fixed;
@@ -225,7 +225,7 @@ input[type="text"] {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
-/* Styles pour les options de recherche */
+/* Styles for search options */
 .search-engines-options,
 .region-options {
   margin-bottom: 25px;
@@ -335,7 +335,7 @@ input[type="text"] {
   background-color: #444;
 }
 
-/* Ajustements responsifs */
+/* Responsive adjustments */
 @media (max-width: 768px) {
   .search-container {
     flex-wrap: wrap;
@@ -370,7 +370,7 @@ input[type="text"] {
   }
 }
 
-/* Indicateur de chargement */
+/* Loading indicator */
 .loading {
   text-align: center;
   margin-top: 20px;
@@ -397,7 +397,7 @@ input[type="text"] {
   display: none;
 }
 
-/* Onglets de navigation principale */
+/* Main tab navigation */
 .main-tabs {
   display: flex;
   justify-content: center;
@@ -434,7 +434,7 @@ input[type="text"] {
   z-index: 1;
 }
 
-/* Contenus des onglets */
+/* Tab contents */
 [data-tab-content] {
   display: none;
 }
@@ -443,14 +443,14 @@ input[type="text"] {
   display: block;
 }
 
-/* Section des résultats */
+/* Results section */
 .results-section {
   margin-bottom: 40px;
   background-color: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 30px;
-  border-left: 4px solid var(--primary-color); /* Bordure latérale orange */
+  border-left: 4px solid var(--primary-color); /* Orange lateral border */
 }
 
 .results-section h2 {
@@ -460,7 +460,7 @@ input[type="text"] {
   letter-spacing: -0.5px;
 }
 
-/* Onglets des moteurs de recherche */
+/* Search engine tabs */
 .tabs {
   display: flex;
   margin-bottom: 30px;
@@ -489,7 +489,7 @@ input[type="text"] {
   border-bottom: 2px solid var(--primary-color);
 }
 
-/* Liste des résultats */
+/* Result items */
 .result-item {
   margin-bottom: 25px;
   padding: 20px;
@@ -511,7 +511,7 @@ input[type="text"] {
 }
 
 .result-item .result-url {
-  color: #9ca3af; /* Gris-bleu clair */
+  color: #9ca3af; /* Light blue-gray */
   display: block;
   margin-bottom: 10px;
   word-break: break-all;
@@ -526,7 +526,7 @@ input[type="text"] {
 
 .result-engine {
   display: inline-block;
-  background-color: #3a3531; /* Brun très sombre */
+  background-color: #3a3531; /* Dark brown */
   padding: 3px 10px;
   border-radius: 12px;
   font-size: 0.75rem;
@@ -537,13 +537,13 @@ input[type="text"] {
   letter-spacing: 0.5px;
 }
 
-/* Section de l'historique - maintenant dans un onglet */
+/* History section - now in a tab */
 .history-section {
   background-color: var(--card-bg);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 30px;
-  border-left: 4px solid var(--secondary-color); /* Bordure latérale brun foncé */
+  border-left: 4px solid var(--secondary-color); /* Dark brown lateral border */
 }
 
 .history-section h2 {
@@ -594,7 +594,7 @@ input[type="text"] {
   font-weight: 600;
 }
 
-/* Boutons dans l'historique */
+/* History actions */
 .history-actions {
   display: flex;
   flex-direction: column;
@@ -617,7 +617,7 @@ input[type="text"] {
 
 .view-results:hover {
   opacity: 0.9;
-  background-color: #6a5d53; /* Brun légèrement plus clair au survol */
+  background-color: #6a5d53; /* Light brown on hover */
 }
 
 .delete-search {
@@ -638,7 +638,7 @@ input[type="text"] {
   background-color: var(--danger-dark);
 }
 
-/* Animation pour la suppression d'éléments */
+/* Fade out animation */
 @keyframes fadeOut {
   from {
     opacity: 1;
@@ -657,7 +657,7 @@ input[type="text"] {
   overflow: hidden;
 }
 
-/* Pied de page */
+/* Footer */
 footer {
   text-align: center;
   margin-top: 40px;
@@ -667,7 +667,7 @@ footer {
   border-top: 1px solid var(--border-color);
 }
 
-/* Responsive */
+/* Responsive adjustments */
 @media (max-width: 768px) {
   .search-container {
     flex-direction: column;
@@ -715,7 +715,7 @@ footer {
   }
 }
 
-/* Sélecteur de langue */
+/* Language selector */
 .language-selector {
   position: absolute;
   top: 1rem;
@@ -744,7 +744,7 @@ footer {
   text-decoration: underline;
 }
 
-/* Bouton Visiter */
+/* Visit button */
 .visit-button {
   display: inline-block;
   margin-top: 15px;
@@ -764,7 +764,7 @@ footer {
   background-color: var(--primary-dark);
 }
 
-/* Styles pour les résultats avec scoring */
+/* Styles for scored results */
 .total-results-info {
   margin-bottom: 20px;
   padding: 10px 15px;
@@ -784,7 +784,7 @@ footer {
 
 .result-score {
   display: inline-block;
-  width: 45px; /* Un peu plus large pour s'adapter aux décimales */
+  width: 45px; /* A bit wider for decimals */
   height: 45px;
   line-height: 45px;
   text-align: center;
@@ -793,7 +793,7 @@ footer {
   font-size: 0.85rem;
   color: white;
   position: relative;
-  cursor: help; /* Indique qu'il y a un tooltip */
+  cursor: help; /* Indicates there's a tooltip */
   transition: transform 0.2s;
 }
 
@@ -802,15 +802,15 @@ footer {
 }
 
 .score-high {
-  background-color: #4caf50; /* Vert pour 4-5 moteurs */
+  background-color: #4caf50; /* Green for 4-5 engines */
 }
 
 .score-medium {
-  background-color: #ff9800; /* Orange pour 2-3 moteurs */
+  background-color: #ff9800; /* Orange for 2-3 engines */
 }
 
 .score-low {
-  background-color: #f44336; /* Rouge pour 1 moteur */
+  background-color: #f44336; /* Red for 1 engine */
 }
 
 .result-engines {
@@ -874,7 +874,7 @@ footer {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* Adapte la disposition pour les petits écrans */
+/* Adjust layout for small screens */
 @media (max-width: 768px) {
   .result-meta-info {
     flex-direction: column;
@@ -887,7 +887,7 @@ footer {
   }
 }
 
-/* Styles pour les options de recherche avancées */
+/* Styles for advanced search options */
 .search-options {
-  display: none; /* Cette classe n'est plus utilisée, remplacée par la modale */
+  display: none; /* This class is no longer used, replaced by the modal */
 }

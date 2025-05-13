@@ -2,84 +2,82 @@ const puppeteer = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const utils = require("./utils");
 
-// Ajouter le plugin stealth pour éviter la détection
+// Add stealth plugin to avoid detection
 puppeteer.use(StealthPlugin());
 
 /**
- * Recherche sur Brave Search avec Puppeteer
- * @param {string} query - Le terme de recherche
- * @param {string} region - La région de la recherche
- * @param {string} language - La langue de la recherche
- * @returns {Promise<Array>} Tableau des résultats de recherche
+ * Search on Brave Search with Puppeteer
+ * @param {string} query - Search term
+ * @param {string} region - Search region
+ * @param {string} language - Search language
+ * @returns {Promise<Array>} Array of search results
  */
 async function searchBrave(query, region, language) {
-  console.log(`\n🔍 Tentative de recherche Brave pour: "${query}"`);
+  console.log(`\n🔍 Attempting Brave search for: "${query}"`);
   let browser;
   try {
     browser = await utils.getBrowser();
-    console.log("📝 Configuration de la page Brave Search...");
+    console.log("📝 Setting up Brave Search page...");
     const page = await browser.newPage();
 
-    // Masquer la signature Puppeteer/WebDriver
+    // Hide Puppeteer/WebDriver signature
     await utils.setupBrowserAntiDetection(page);
 
-    // Configurer un user agent approprié à la région/langue
+    // Configure appropriate user agent for region/language
     const userAgent = await utils.getUserAgent(region, language);
     await page.setUserAgent(userAgent);
-    console.log(`🔒 User-Agent configuré: ${userAgent.substring(0, 50)}...`);
+    console.log(`🔒 User-Agent configured: ${userAgent.substring(0, 50)}...`);
 
-    // Configurer une taille d'écran aléatoire
+    // Configure random screen size
     await utils.setupRandomScreenSize(page);
 
-    console.log(`🌐 Navigation vers Brave Search...`);
-    // Naviguer vers Brave Search avec un timeout plus long
+    console.log(`🌐 Navigating to Brave Search...`);
+    // Navigate to Brave Search with longer timeout
     try {
       await page.goto(
         `https://search.brave.com/search?q=${encodeURIComponent(
           query
         )}&source=web`,
         {
-          waitUntil: "domcontentloaded", // Utiliser domcontentloaded au lieu de networkidle2
-          timeout: 60000, // Augmenter à 60 secondes
+          waitUntil: "domcontentloaded", // Use domcontentloaded instead of networkidle2
+          timeout: 60000, // Increase to 60 seconds
         }
       );
     } catch (navError) {
-      console.warn(
-        `⚠️ Problème lors de la navigation vers Brave: ${navError.message}`
-      );
-      console.log("Tentative d'alternative avec une URL simplifiée...");
+      console.warn(`⚠️ Problem navigating to Brave: ${navError.message}`);
+      console.log("Attempting alternative with simplified URL...");
 
-      // Tenter une approche alternative
+      // Try alternative approach
       try {
         await page.goto(`https://search.brave.com/`, {
           waitUntil: "domcontentloaded",
           timeout: 45000,
         });
 
-        // Attendre que la page se charge
+        // Wait for page to load
         await utils.randomDelay(2000, 4000);
 
-        // Saisir la recherche dans le champ
+        // Enter search in field
         await page.type('input[name="q"]', query);
         await page.keyboard.press("Enter");
 
-        // Attendre que les résultats se chargent
+        // Wait for results to load
         await page.waitForSelector("#results", { timeout: 30000 }).catch(() => {
-          console.log("Sélecteur de résultats non trouvé, mais on continue");
+          console.log("Results selector not found, but continuing");
         });
       } catch (altError) {
         console.error(
-          `❌ L'approche alternative a également échoué: ${altError.message}`
+          `❌ Alternative approach also failed: ${altError.message}`
         );
-        throw navError; // Remonter l'erreur originale
+        throw navError; // Throw original error
       }
     }
 
-    console.log(`⏳ Attente après chargement de la page...`);
-    // Petite pause pour éviter la détection
+    console.log(`⏳ Waiting after page load...`);
+    // Short pause to avoid detection
     await utils.randomDelay(1000, 3000);
 
-    // Gérer les popups de consentement éventuels
+    // Handle possible consent popups
     try {
       const consentSelectors = [
         'button[data-t="acceptAllButton"]',
@@ -90,39 +88,39 @@ async function searchBrave(query, region, language) {
       for (const selector of consentSelectors) {
         const button = await page.$(selector);
         if (button) {
-          console.log(`🍪 Popup de consentement détecté, clic sur ${selector}`);
+          console.log(`🍪 Consent popup detected, clicking on ${selector}`);
           await button.click();
           await utils.randomDelay(1000, 2000);
           break;
         }
       }
     } catch (e) {
-      console.log("ℹ️ Pas de popup à fermer ou erreur:", e.message);
+      console.log("ℹ️ No popup to close or error:", e.message);
     }
 
-    // Vérifier si un CAPTCHA est présent et le faire résoudre par l'utilisateur si nécessaire
+    // Check if CAPTCHA is present and have user solve it if necessary
     const captchaResolved = await utils.handleCaptcha(page, "Brave");
     if (captchaResolved) {
-      console.log("✅ CAPTCHA résolu, reprise de la recherche Brave...");
-      // Attendre un peu après la résolution du CAPTCHA
+      console.log("✅ CAPTCHA solved, resuming Brave search...");
+      // Wait a bit after solving CAPTCHA
       await utils.randomDelay(2000, 4000);
     }
 
-    console.log(`🖱️ Simulation de scrolling pour paraître humain...`);
+    console.log(`🖱️ Simulating scrolling to appear human...`);
     await utils.humanScroll(page);
     await utils.randomDelay(1000, 2000);
 
-    console.log(`🔍 Extraction des résultats Brave...`);
+    console.log(`🔍 Extracting Brave results...`);
     const results = await page.evaluate(() => {
       const searchResults = [];
 
-      // Mise à jour des sélecteurs pour les résultats organiques de Brave
+      // Updated selectors for Brave organic results
       const resultElements = document.querySelectorAll(
         ".snippet, .fdb, article.svelte-127ph0k"
       );
 
       if (resultElements.length === 0) {
-        // Essayer d'autres sélecteurs si les premiers ne fonctionnent pas
+        // Try other selectors if first ones don't work
         const altSelectors = [
           'article[data-type="organic"]',
           ".results-section .module-item",
@@ -135,7 +133,7 @@ async function searchBrave(query, region, language) {
           const elements = document.querySelectorAll(selector);
           if (elements.length > 0) {
             elements.forEach((element) => {
-              // Extraire le titre
+              // Extract title
               const titleElement = element.querySelector(
                 "h3, .title, h4, a[data-opt] > div:first-child"
               );
@@ -143,7 +141,7 @@ async function searchBrave(query, region, language) {
 
               const title = titleElement.textContent.trim();
 
-              // Extraire l'URL
+              // Extract URL
               const linkElement = element.querySelector(
                 'a[href]:not([href="#"])'
               );
@@ -151,7 +149,7 @@ async function searchBrave(query, region, language) {
 
               const url = linkElement.href;
 
-              // Extraire la description
+              // Extract description
               const descriptionElement = element.querySelector(
                 ".snippet-description, .description, .snippet-content, div > p"
               );
@@ -164,26 +162,26 @@ async function searchBrave(query, region, language) {
               }
             });
 
-            // Si on a trouvé des résultats, on arrête la boucle
+            // If we found results, stop the loop
             if (searchResults.length > 0) break;
           }
         }
       } else {
-        // Utiliser les résultats des sélecteurs originaux s'ils fonctionnent
+        // Use results from original selectors if they work
         resultElements.forEach((element) => {
-          // Extraire le titre
+          // Extract title
           const titleElement = element.querySelector(".title, h3, h4, strong");
           if (!titleElement) return;
 
           const title = titleElement.textContent.trim();
 
-          // Extraire l'URL
+          // Extract URL
           const linkElement = element.querySelector('a[href]:not([href="#"])');
           if (!linkElement) return;
 
           const url = linkElement.href;
 
-          // Extraire la description
+          // Extract description
           const descriptionElement = element.querySelector(
             ".snippet-description, .description, .snippet-content, div > p"
           );
@@ -197,13 +195,13 @@ async function searchBrave(query, region, language) {
         });
       }
 
-      // Vérifier si la page contient un message d'erreur ou "No results found"
+      // Check if page contains an error message or "No results found"
       const noResultsElement = document.querySelector(
         ".no-results, .empty-state, .message-area"
       );
       if (searchResults.length === 0 && noResultsElement) {
         console.log(
-          "Message de page sans résultats détecté:",
+          "No results page message detected:",
           noResultsElement.textContent.trim()
         );
       }
@@ -211,38 +209,35 @@ async function searchBrave(query, region, language) {
       return searchResults;
     });
 
-    // Prendre une capture d'écran pour debug si aucun résultat n'est trouvé
+    // Take a diagnostic screenshot if no results are found
     if (results.length === 0) {
       try {
-        console.log("⚠️ Capture d'écran de diagnostic pour Brave Search...");
+        console.log("⚠️ Diagnostic screenshot for Brave Search...");
         await page.screenshot({ path: "brave-debug.png" });
-        console.log("✅ Capture d'écran sauvegardée dans brave-debug.png");
+        console.log("✅ Screenshot saved to brave-debug.png");
       } catch (screenshotError) {
-        console.log(
-          "❌ Impossible de prendre une capture d'écran:",
-          screenshotError.message
-        );
+        console.log("❌ Unable to take screenshot:", screenshotError.message);
       }
     }
 
     console.log(
-      `🏁 Extraction Brave terminée, ${results.length} résultats trouvés`
+      `🏁 Brave extraction completed, ${results.length} results found`
     );
 
     if (results.length === 0) {
-      console.warn("⚠️ Aucun résultat trouvé pour Brave");
+      console.warn("⚠️ No results found for Brave");
     }
 
     return results;
   } catch (error) {
-    console.error("❌ Erreur lors de la recherche Brave:", error);
+    console.error("❌ Error during Brave search:", error);
     return [];
   } finally {
     if (browser) {
       try {
         await browser.close();
       } catch (e) {
-        console.error("Erreur lors de la fermeture du navigateur:", e);
+        console.error("Error closing browser:", e);
       }
     }
   }

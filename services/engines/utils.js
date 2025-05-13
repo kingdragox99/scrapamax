@@ -1,19 +1,17 @@
 const puppeteer = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 
-// Ajouter le plugin stealth pour éviter la détection
+// Add stealth plugin to avoid detection
 puppeteer.use(StealthPlugin());
 
 /**
- * Obtient une instance du navigateur configurée pour éviter la détection
- * @returns {Promise<Browser>} Instance Puppeteer
+ * Gets a browser instance configured to avoid detection
+ * @returns {Promise<Browser>} Puppeteer instance
  */
 async function getBrowser() {
-  console.log(
-    "🚀 Initialisation du navigateur avec protection anti-détection..."
-  );
+  console.log("🚀 Initializing browser with anti-detection protection...");
   const browser = await puppeteer.launch({
-    headless: "new", // Le nouveau mode headless est moins détectable
+    headless: "new", // The new headless mode is less detectable
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -27,39 +25,39 @@ async function getBrowser() {
       "--disable-features=site-per-process,TranslateUI",
       "--disable-accelerated-2d-canvas",
       "--disable-gpu",
-      "--lang=fr-FR,fr,en-US,en", // Spécifier la langue pour plus de cohérence
-      "--disable-extensions", // Désactiver les extensions pour éviter les interférences
-      "--mute-audio", // Couper le son
+      "--lang=fr-FR,fr,en-US,en", // Specify language for more consistency
+      "--disable-extensions", // Disable extensions to avoid interference
+      "--mute-audio", // Mute audio
     ],
     ignoreHTTPSErrors: true,
-    defaultViewport: null, // Permettre au navigateur d'ajuster automatiquement la taille de la fenêtre
+    defaultViewport: null, // Allow browser to automatically adjust window size
   });
 
-  console.log("✅ Navigateur initialisé avec succès");
+  console.log("✅ Browser successfully initialized");
   return browser;
 }
 
 /**
- * Configure les protections anti-détection sur la page
- * @param {Page} page - L'instance de page Puppeteer
+ * Sets up anti-detection protections on the page
+ * @param {Page} page - Puppeteer page instance
  * @returns {Promise<void>}
  */
 async function setupBrowserAntiDetection(page) {
   await page.evaluateOnNewDocument(() => {
-    // Surcharge des méthodes de détection d'automatisation
+    // Override automation detection methods
     Object.defineProperty(navigator, "webdriver", {
       get: () => false,
     });
-    // Supprimer les attributs de détection de Chrome
+    // Remove Chrome detection attributes
     delete navigator.languages;
     Object.defineProperty(navigator, "languages", {
       get: () => ["fr-FR", "fr", "en-US", "en"],
     });
-    // Simuler une plateforme non-headless
+    // Simulate a non-headless platform
     Object.defineProperty(navigator, "platform", {
       get: () => "Win32",
     });
-    // Masquer les fonctions de détection de Puppeteer
+    // Hide Puppeteer detection functions
     window.chrome = {
       runtime: {},
     };
@@ -67,13 +65,13 @@ async function setupBrowserAntiDetection(page) {
 }
 
 /**
- * Configure une taille d'écran aléatoire pour simuler un comportement humain
- * @param {Page} page - L'instance de page Puppeteer
+ * Sets a random screen size to simulate human behavior
+ * @param {Page} page - Puppeteer page instance
  * @returns {Promise<void>}
  */
 async function setupRandomScreenSize(page) {
-  console.log(`🖥️ Configuration de la taille d'écran aléatoire...`);
-  // Configurer des comportements aléatoires
+  console.log(`🖥️ Setting up random screen size...`);
+  // Configure random behaviors
   await page.setViewport({
     width: 1280 + Math.floor(Math.random() * 100),
     height: 800 + Math.floor(Math.random() * 100),
@@ -85,65 +83,65 @@ async function setupRandomScreenSize(page) {
 }
 
 /**
- * Génère une pause aléatoire pour simuler un comportement humain
- * @param {number} min - Délai minimum en ms
- * @param {number} max - Délai maximum en ms
+ * Generates a random pause to simulate human behavior
+ * @param {number} min - Minimum delay in ms
+ * @param {number} max - Maximum delay in ms
  * @returns {Promise<void>}
  */
 async function randomDelay(min = 1000, max = 5000) {
   const delay = Math.floor(Math.random() * (max - min + 1)) + min;
-  console.log(`⏱️ Pause aléatoire de ${delay}ms...`);
+  console.log(`⏱️ Random pause of ${delay}ms...`);
   await new Promise((resolve) => setTimeout(resolve, delay));
 }
 
 /**
- * Retourne un user agent approprié en fonction de la région et de la langue
- * @param {string} region - Code de région (fr, us, etc.)
- * @param {string} language - Code de langue (fr, en, etc.)
+ * Returns an appropriate user agent based on region and language
+ * @param {string} region - Region code (fr, us, etc.)
+ * @param {string} language - Language code (fr, en, etc.)
  * @returns {Promise<string>} User agent
  */
 async function getUserAgent(region = "global", language = "auto") {
-  // Définir plusieurs user agents par région et langue
+  // Define multiple user agents by region and language
   const userAgentsByRegion = {
-    // User agents pour les USA
+    // User agents for USA
     us: [
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.2365.80",
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     ],
-    // User agents pour la France
+    // User agents for France
     fr: [
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
     ],
-    // User agents pour le Royaume-Uni
+    // User agents for United Kingdom
     uk: [
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.2365.80",
     ],
-    // User agents pour l'Allemagne
+    // User agents for Germany
     de: [
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
       "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     ],
-    // User agents pour le Japon
+    // User agents for Japan
     jp: [
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
       "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
     ],
-    // User agents pour la Chine
+    // User agents for China
     cn: [
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
       "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36",
       "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
     ],
-    // User agents globaux
+    // Global user agents
     global: [
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
@@ -155,21 +153,21 @@ async function getUserAgent(region = "global", language = "auto") {
     ],
   };
 
-  // User agents spécifiques à certaines langues
+  // User agents specific to certain languages
   const userAgentsByLanguage = {
-    // User agents pour le Japonais
+    // User agents for Japanese
     ja: [
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15",
       "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
     ],
-    // User agents pour le Chinois
+    // User agents for Chinese
     zh: [
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
       "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
       "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
     ],
-    // User agents pour le Russe
+    // User agents for Russian
     ru: [
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
@@ -177,86 +175,80 @@ async function getUserAgent(region = "global", language = "auto") {
     ],
   };
 
-  // Déterminer quels user agents utiliser
+  // Determine which user agents to use
   let userAgents;
 
-  // Si la langue est spécifiée et non automatique, privilégier les user agents spécifiques à la langue
+  // If language is specified and not automatic, prioritize language-specific user agents
   if (language !== "auto" && userAgentsByLanguage[language]) {
     userAgents = userAgentsByLanguage[language];
-    console.log(
-      `🌐 Utilisation d'un user agent spécifique à la langue: ${language}`
-    );
+    console.log(`🌐 Using language-specific user agent: ${language}`);
   }
-  // Sinon, utiliser les user agents spécifiques à la région
+  // Otherwise, use region-specific user agents
   else if (region !== "global" && userAgentsByRegion[region]) {
     userAgents = userAgentsByRegion[region];
-    console.log(
-      `🌐 Utilisation d'un user agent spécifique à la région: ${region}`
-    );
+    console.log(`🌐 Using region-specific user agent: ${region}`);
   }
-  // Par défaut, utiliser les user agents globaux
+  // By default, use global user agents
   else {
     userAgents = userAgentsByRegion.global;
-    console.log(`🌐 Utilisation d'un user agent global`);
+    console.log(`🌐 Using global user agent`);
   }
 
-  // Sélectionner un user agent aléatoire dans la liste appropriée
+  // Select a random user agent from the appropriate list
   const randomIndex = Math.floor(Math.random() * userAgents.length);
   return userAgents[randomIndex];
 }
 
 /**
- * Nettoie les URLs de redirection de DuckDuckGo pour obtenir l'URL réelle
- * @param {string} url - URL potentiellement de redirection
- * @returns {string} URL décodée ou originale
+ * Cleans DuckDuckGo redirect URLs to get the real URL
+ * @param {string} url - Potentially a redirect URL
+ * @returns {string} Decoded URL or original
  */
 function decodeDuckDuckGoUrl(url) {
-  // Vérifie si c'est une URL de redirection DuckDuckGo
+  // Check if it's a DuckDuckGo redirect URL
   if (url && url.startsWith("https://duckduckgo.com/l/")) {
     try {
-      // Extraire le paramètre uddg qui contient l'URL originale encodée
+      // Extract the uddg parameter containing the encoded original URL
       const urlObj = new URL(url);
       const uddg = urlObj.searchParams.get("uddg");
       if (uddg) {
-        // Décoder l'URL pour obtenir l'URL originale
+        // Decode URL to get the original URL
         return decodeURIComponent(uddg);
       }
     } catch (e) {
-      console.log(
-        `⚠️ Erreur lors du décodage de l'URL DuckDuckGo: ${e.message}`
-      );
+      console.log(`⚠️ Error decoding DuckDuckGo URL: ${e.message}`);
     }
   }
 
-  // Si ce n'est pas une URL de redirection ou s'il y a une erreur, retourner l'URL originale
+  // If it's not a redirect URL or there's an error, return the original URL
   return url;
 }
 
 /**
- * Décode les URLs de redirection de Baidu
- * @param {string} url - URL de redirection Baidu
- * @param {Page} page - Instance de page Puppeteer (optionnel)
- * @returns {Promise<string>} URL décodée
+ * Decodes Baidu redirect URLs
+ * @param {string} url - Baidu redirect URL
+ * @param {Page} page - Puppeteer page instance (optional)
+ * @returns {Promise<string>} Decoded URL
  */
 async function decodeBaiduUrl(url, page = null) {
-  // Vérifier si c'est une URL de redirection Baidu
+  // Check if it's a Baidu redirect URL
   if (
     url &&
     (url.includes("baidu.com/link?") || url.includes("baidu.com/url?"))
   ) {
     try {
-      // Si une page est fournie, utiliser cette page pour suivre la redirection
+      // If a page is provided, use that page to follow the redirect
       if (page) {
-        // Stocker l'URL courante
+        // Store the current URL
         const currentUrl = page.url();
 
-        // Créer un événement pour capturer la redirection
+        // Create an event to capture the redirect
         let realUrl = null;
         const client = await page.target().createCDPSession();
         await client.send("Network.enable");
 
         client.on("Network.requestWillBeSent", (event) => {
-          // Ignorer les requêtes vers Baidu
+          // Ignore requests to Baidu
           if (
             event.request.url &&
             !event.request.url.includes("baidu.com") &&
@@ -266,93 +258,93 @@ async function decodeBaiduUrl(url, page = null) {
           }
         });
 
-        // Naviguer vers l'URL de redirection
+        // Navigate to the redirect URL
         await page
           .goto(url, { waitUntil: "domcontentloaded", timeout: 10000 })
           .catch(() => {});
 
-        // Attendre un peu pour la redirection
+        // Wait a bit for the redirect
         await new Promise((r) => setTimeout(r, 2000));
 
-        // Retourner à l'URL originale
+        // Return to the original URL
         await page
           .goto(currentUrl, { waitUntil: "domcontentloaded" })
           .catch(() => {});
 
-        // Si on a capturé une URL réelle
+        // If we captured a real URL
         if (realUrl) {
-          console.log(`🔄 URL Baidu décodée: ${url} -> ${realUrl}`);
+          console.log(`🔄 Baidu URL decoded: ${url} -> ${realUrl}`);
           return realUrl;
         }
       }
 
-      // Méthode alternative: extraire le paramètre url de l'URL Baidu
+      // Alternative method: extract the url parameter from the Baidu URL
       const urlObj = new URL(url);
       const redirectUrl = urlObj.searchParams.get("url");
       if (redirectUrl) {
         return redirectUrl;
       }
     } catch (e) {
-      console.log(`⚠️ Erreur lors du décodage de l'URL Baidu: ${e.message}`);
+      console.log(`⚠️ Error decoding Baidu URL: ${e.message}`);
     }
   }
 
-  // Si ce n'est pas une URL de redirection ou s'il y a une erreur, retourner l'URL originale
+  // If it's not a redirect URL or there's an error, return the original URL
   return url;
 }
 
 /**
- * Décode les URLs de redirection de Bing
- * @param {string} url - URL de redirection Bing
- * @returns {string} URL décodée
+ * Decodes Bing redirect URLs
+ * @param {string} url - Bing redirect URL
+ * @returns {string} Decoded URL
  */
 function decodeBingUrl(url) {
-  // Vérifier si c'est une URL de redirection Bing
+  // Check if it's a Bing redirect URL
   if (url && url.includes("bing.com/ck/")) {
     try {
-      // L'URL réelle est encodée en Base64 dans le paramètre 'u'
+      // The real URL is Base64 encoded in the 'u' parameter
       const match = url.match(/[?&]u=([^&]+)/);
       if (match && match[1]) {
-        // Décoder la partie Base64
+        // Decode the Base64 part
         let encodedUrl = match[1];
 
-        // Pour Bing, le format est souvent 'a1' suivi de l'URL encodée en Base64
+        // For Bing, the format is often 'a1' followed by the Base64 encoded URL
         if (encodedUrl.startsWith("a1")) {
           encodedUrl = encodedUrl.substring(2);
         }
 
         try {
-          // Décoder l'URL en Base64
+          // Decode Base64 URL
           const decodedUrl = Buffer.from(encodedUrl, "base64").toString(
             "utf-8"
           );
           if (decodedUrl && decodedUrl.startsWith("http")) {
-            console.log(`🔄 URL Bing décodée: ${url} -> ${decodedUrl}`);
+            console.log(`🔄 Bing URL decoded: ${url} -> ${decodedUrl}`);
             return decodedUrl;
           }
         } catch (e) {
-          console.log(`⚠️ Erreur lors du décodage Base64: ${e.message}`);
+          console.log(`⚠️ Error with Base64 decoding: ${e.message}`);
         }
       }
     } catch (e) {
-      console.log(`⚠️ Erreur lors du décodage de l'URL Bing: ${e.message}`);
+      console.log(`⚠️ Error decoding Bing URL: ${e.message}`);
     }
   }
 
-  // Si ce n'est pas une URL de redirection ou s'il y a une erreur, retourner l'URL originale
+  // If it's not a redirect URL or there's an error, return the original URL
   return url;
 }
 
 /**
- * Effectue un défilement aléatoire et naturel sur la page
- * @param {Page} page - L'instance de page Puppeteer
+ * Performs random and natural scrolling on the page
+ * @param {Page} page - Puppeteer page instance
  * @returns {Promise<void>}
  */
 async function humanScroll(page) {
   await page.evaluate(() => {
     return new Promise((resolve) => {
-      // Paramètres de défilement aléatoires
-      const totalScrolls = 3 + Math.floor(Math.random() * 5); // 3-7 défilements
+      // Random scrolling parameters
+      const totalScrolls = 3 + Math.floor(Math.random() * 5); // 3-7 scrolls
       let currentScroll = 0;
 
       const scroll = () => {
@@ -361,16 +353,16 @@ async function humanScroll(page) {
           return;
         }
 
-        // Distance aléatoire de défilement (plus humain)
+        // Random scrolling distance (more human-like)
         const distance = 100 + Math.floor(Math.random() * 400);
 
-        // Vitesse aléatoire de défilement
+        // Random scrolling speed
         const delay = 500 + Math.floor(Math.random() * 1000);
 
         window.scrollBy(0, distance);
         currentScroll++;
 
-        // Petite chance de remonter légèrement (comme un humain)
+        // Small chance to scroll back up slightly (like a human)
         if (Math.random() > 0.7 && currentScroll > 1) {
           setTimeout(() => {
             window.scrollBy(0, -Math.floor(Math.random() * 100));
@@ -385,22 +377,20 @@ async function humanScroll(page) {
     });
   });
 
-  // Pause après le défilement
+  // Pause after scrolling
   await randomDelay(1000, 2000);
 }
 
 /**
- * Détecte et gère les CAPTCHA avec intervention de l'utilisateur
- * @param {Page} page - L'instance de page Puppeteer
- * @param {string} engineName - Nom du moteur de recherche pour les logs
- * @returns {Promise<boolean>} True si un CAPTCHA a été détecté et résolu
+ * Detects and handles CAPTCHAs with user intervention
+ * @param {Page} page - Puppeteer page instance
+ * @param {string} engineName - Search engine name for logs
+ * @returns {Promise<boolean>} True if a CAPTCHA was detected and resolved
  */
 async function handleCaptcha(page, engineName) {
-  console.log(
-    `🔍 Vérification de la présence d'un CAPTCHA sur ${engineName}...`
-  );
+  console.log(`🔍 Checking for CAPTCHA presence on ${engineName}...`);
 
-  // Sélecteurs pour différents types de CAPTCHA
+  // Selectors for different types of CAPTCHAs
   const captchaSelectors = {
     brave: [
       'button:contains("I\'m not a robot")',
@@ -420,7 +410,7 @@ async function handleCaptcha(page, engineName) {
       'form[action*="captcha"]',
       'div:contains("Je ne suis pas un robot")',
       'div:contains("I am not a robot")',
-      // SmartCaptcha par Yandex Cloud
+      // SmartCaptcha by Yandex Cloud
       ".SmartCaptcha",
       ".SmartCaptcha-Anchor",
       ".SmartCaptcha-CheckboxCaptcha",
@@ -439,23 +429,23 @@ async function handleCaptcha(page, engineName) {
     ],
   };
 
-  // Combiner les sélecteurs spécifiques au moteur et généraux
+  // Combine engine-specific and general selectors
   const selectors = [
     ...(captchaSelectors[engineName.toLowerCase()] || []),
     ...captchaSelectors.general,
   ];
 
-  // Vérifier si un CAPTCHA est présent
+  // Check if a CAPTCHA is present
   const captchaDetected = await page.evaluate((selectors) => {
-    // Fonction pour vérifier si un élément contient un texte spécifique
+    // Function to check if an element contains specific text
     const containsText = (element, text) => {
       return element && element.innerText && element.innerText.includes(text);
     };
 
-    // Chercher des éléments qui correspondent aux sélecteurs
+    // Look for elements that match the selectors
     for (const selector of selectors) {
       if (selector.includes(':contains("')) {
-        // Traitement spécial pour les sélecteurs avec le pseudo-sélecteur :contains()
+        // Special handling for selectors with :contains() pseudo-selector
         const plainSelector = selector.split(":contains(")[0];
         const searchText = selector.match(/:contains\("(.+?)"\)/)[1];
 
@@ -470,7 +460,7 @@ async function handleCaptcha(page, engineName) {
           }
         }
       } else {
-        // Sélecteurs CSS standard
+        // Standard CSS selectors
         const elements = document.querySelectorAll(selector);
         if (elements.length > 0) {
           return {
@@ -482,7 +472,7 @@ async function handleCaptcha(page, engineName) {
       }
     }
 
-    // Vérifier également le titre et le contenu de la page pour des indications de CAPTCHA
+    // Also check page title and content for CAPTCHA indications
     const pageTitle = document.title.toLowerCase();
     const bodyText = document.body.innerText.toLowerCase();
 
@@ -503,35 +493,33 @@ async function handleCaptcha(page, engineName) {
     return { found: false };
   }, selectors);
 
-  // Si un CAPTCHA est détecté
+  // If a CAPTCHA is detected
   if (captchaDetected.found) {
-    console.log(`⚠️ CAPTCHA détecté sur ${engineName}:`, captchaDetected);
+    console.log(`⚠️ CAPTCHA detected on ${engineName}:`, captchaDetected);
 
-    // Prendre une capture d'écran du CAPTCHA
+    // Take a screenshot of the CAPTCHA
     const screenshotPath = `${engineName.toLowerCase()}-captcha.png`;
     await page.screenshot({ path: screenshotPath });
-    console.log(`📸 Capture d'écran du CAPTCHA sauvegardée: ${screenshotPath}`);
+    console.log(`📸 CAPTCHA screenshot saved: ${screenshotPath}`);
 
-    // Configurer le navigateur pour être visible (non-headless)
-    console.log(
-      `🔄 Rechargement de la page en mode visible pour résolution manuelle...`
-    );
+    // Configure browser to be visible (non-headless)
+    console.log(`🔄 Reloading page in visible mode for manual resolution...`);
     const context = page.browser().defaultBrowserContext();
 
-    // Ouvrir une nouvelle page visible pour l'intervention de l'utilisateur
+    // Open a new visible page for user intervention
     const browser = await puppeteer.launch({
-      headless: false, // Mode non-headless pour permettre l'interaction
+      headless: false, // Non-headless mode to allow interaction
       args: ["--start-maximized", "--no-sandbox", "--disable-setuid-sandbox"],
     });
 
     const visiblePage = await browser.newPage();
     await visiblePage.setViewport({ width: 1280, height: 800 });
 
-    // Aller sur la même URL
+    // Go to the same URL
     const currentUrl = page.url();
     await visiblePage.goto(currentUrl, { waitUntil: "domcontentloaded" });
 
-    // Afficher un message à l'utilisateur
+    // Display a message to the user
     await visiblePage.evaluate(() => {
       const div = document.createElement("div");
       div.id = "captcha-notification";
@@ -550,8 +538,8 @@ async function handleCaptcha(page, engineName) {
       div.style.boxShadow = "0 -2px 10px rgba(0,0,0,0.3)";
       div.style.borderTop = "2px solid var(--primary-color, #ff7f00)";
       div.innerHTML = `
-        CAPTCHA détecté! Veuillez résoudre le CAPTCHA ci-dessus.<br>
-        Une fois résolu, cliquez sur le bouton ci-dessous pour continuer la recherche.<br>
+        CAPTCHA detected! Please solve the CAPTCHA above.<br>
+        Once solved, click the button below to continue the search.<br>
         <button id="captcha-solved" style="
           background-color: #ff7f00;
           color: white;
@@ -561,33 +549,31 @@ async function handleCaptcha(page, engineName) {
           border-radius: 4px;
           cursor: pointer;
           font-weight: bold;
-        ">J'ai résolu le CAPTCHA</button>
+        ">I've solved the CAPTCHA</button>
       `;
       document.body.appendChild(div);
 
-      // Ajouter un gestionnaire d'événements pour le bouton
+      // Add event handler for the button
       document
         .getElementById("captcha-solved")
         .addEventListener("click", () => {
           div.style.backgroundColor = "rgba(0, 128, 0, 0.8)";
-          div.innerHTML = "Merci! La recherche va continuer...";
+          div.innerHTML = "Thank you! The search will continue...";
           setTimeout(() => {
             window.close();
           }, 2000);
         });
     });
 
-    // Attendre que l'utilisateur résolve le CAPTCHA et ferme la fenêtre
-    console.log(
-      `⏳ En attente de la résolution du CAPTCHA par l'utilisateur...`
-    );
+    // Wait for the user to solve the CAPTCHA and close the window
+    console.log(`⏳ Waiting for the user to solve the CAPTCHA...`);
     await new Promise((resolve) => {
       browser.on("disconnected", resolve);
     });
 
-    console.log(`✅ CAPTCHA résolu par l'utilisateur!`);
+    console.log(`✅ CAPTCHA solved by user!`);
 
-    // Continuer avec la page originale
+    // Continue with the original page
     await page.reload({ waitUntil: "domcontentloaded" });
     await randomDelay(2000, 3000);
 

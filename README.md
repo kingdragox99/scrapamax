@@ -1,104 +1,104 @@
 # Scrapamax
 
-Scrapamax est une application web qui permet de rechercher un mot ou un pseudo sur plusieurs moteurs de recherche simultanément et d'afficher les résultats dans une interface unifiée.
+Scrapamax is a web application that allows you to search for a word or username across multiple search engines simultaneously and display the results in a unified interface.
 
-## Fonctionnalités
+## Features
 
-- Recherche avancée sur Google, Bing, DuckDuckGo, Yandex, Ecosia, Brave et Baidu
-- Technique anti-détection avec navigation headless
-- Gestion intelligente des CAPTCHA avec détection automatique
-- Support pour SmartCaptcha de Yandex
-- Système de scoring des résultats (de 1.0 à 5.0) basé sur la présence dans différents moteurs
-- Personnalisation des user agents en fonction de la région et de la langue
-- Interface utilisateur moderne avec contraste amélioré
-- Filtrage des résultats par moteur de recherche
-- Historique des recherches avec possibilité de revoir les résultats précédents
-- Support multilingue
+- Advanced search on Google, Bing, DuckDuckGo, Yandex, Ecosia, Brave and Baidu
+- Anti-detection technique with headless browsing
+- Intelligent CAPTCHA management with automatic detection
+- Support for Yandex SmartCaptcha
+- Result scoring system (from 1.0 to 5.0) based on presence across different engines
+- User agent customization based on region and language
+- Modern user interface with improved contrast
+- Filtering results by search engine
+- Search history with ability to review previous results
+- Multilingual support
 
-## Prérequis
+## Prerequisites
 
-- Node.js (v14 ou supérieur)
-- npm ou yarn
-- Chromium/Chrome (installé automatiquement avec Puppeteer)
+- Node.js (v14 or higher)
+- npm or yarn
+- Chromium/Chrome (automatically installed with Puppeteer)
 
 ## Installation
 
-1. Clonez ce dépôt:
+1. Clone this repository:
 
 ```
-git clone https://github.com/votre-utilisateur/scrapamax.git
+git clone https://github.com/your-username/scrapamax.git
 cd scrapamax
 ```
 
-2. Installez les dépendances:
+2. Install dependencies:
 
 ```
 npm install
 ```
 
-3. Démarrez l'application:
+3. Start the application:
 
 ```
 npm start
 ```
 
-L'application sera accessible à l'adresse http://localhost:3000
+The application will be accessible at http://localhost:3000
 
-## Développement
+## Development
 
-Pour exécuter l'application en mode développement (avec rechargement automatique):
+To run the application in development mode (with automatic reloading):
 
 ```
 npm run dev
 ```
 
-## Structure du projet
+## Project Structure
 
-- `index.js` - Point d'entrée de l'application
-- `database.js` - Gestion de la base de données SQLite
-- `scoring.js` - Module de scoring des résultats
-- `routes/` - Définition des routes API
-- `services/engines/` - Modules spécifiques à chaque moteur de recherche
-- `public/` - Fichiers statiques (CSS, JavaScript)
-- `views/` - Templates EJS pour le rendu des pages
-- `locales/` - Fichiers de traduction pour l'internationalisation
+- `index.js` - Application entry point
+- `database.js` - SQLite database management
+- `scoring.js` - Result scoring module
+- `routes/` - API route definitions
+- `services/engines/` - Search engine-specific modules
+- `public/` - Static files (CSS, JavaScript)
+- `views/` - EJS templates for page rendering
+- `locales/` - Translation files for internationalization
 
-## Détails techniques
+## Technical Details
 
-Cette application utilise plusieurs techniques avancées pour récupérer les résultats des moteurs de recherche:
+This application uses several advanced techniques to retrieve search engine results:
 
-- **Puppeteer** - Navigation automatisée avec un navigateur headless
-- **Puppeteer-extra et Stealth plugin** - Évite la détection des navigateurs automatisés
-- **User-Agent personnalisés** - Adapte l'en-tête User-Agent selon la région et la langue
-- **Détection de CAPTCHA** - Interaction avec l'utilisateur pour résoudre les CAPTCHA
-- **Délais et pauses aléatoires** - Simule un comportement humain
-- **Interactions avec les pages** - Gestion des popups, scrolling et autres actions
-- **Contournement des bannières de cookies** - Accepte automatiquement les cookies
-- **Normalisation d'URL** - Suppression des paramètres de tracking pour la déduplication des résultats
-- **Scoring intelligent** - Évaluation des résultats basée sur leur présence dans différents moteurs
+- **Puppeteer** - Automated browsing with a headless browser
+- **Puppeteer-extra and Stealth plugin** - Avoids detection of automated browsers
+- **Custom User-Agent** - Adapts the User-Agent header according to region and language
+- **CAPTCHA detection** - User interaction to solve CAPTCHAs
+- **Random delays and pauses** - Simulates human behavior
+- **Page interactions** - Management of popups, scrolling, and other actions
+- **Cookie banner bypass** - Automatically accepts cookies
+- **URL normalization** - Removal of tracking parameters for result deduplication
+- **Intelligent scoring** - Evaluation of results based on their presence across different engines
 
-Ces techniques permettent de récupérer les résultats même sur les moteurs qui bloquent normalement le scraping traditionnel.
+These techniques allow the retrieval of results even from engines that normally block traditional scraping.
 
-## Améliorations récentes
+## Recent Improvements
 
-- Correction des erreurs lors du traitement des résultats de recherche
-- Amélioration du contraste et de la lisibilité de l'interface
-- Repositionnement de la notification CAPTCHA pour éviter le chevauchement
-- Mise à jour des sélecteurs pour s'adapter aux changements dans les structures HTML des moteurs
-- Optimisation du système de scoring des résultats
-- Support étendu à Brave et Baidu
+- Fixed errors in search result processing
+- Improved interface contrast and readability
+- Repositioned CAPTCHA notification to avoid overlap
+- Updated selectors to adapt to changes in search engines' HTML structures
+- Optimized the result scoring system
+- Extended support to Brave and Baidu
 
-## Limitations et considérations
+## Limitations and Considerations
 
-- Les sites peuvent modifier leurs structures HTML, ce qui peut casser les sélecteurs CSS utilisés pour l'extraction
-- L'extraction des résultats peut être lente (5-15 secondes par moteur) car elle simule un navigateur complet
-- Certains moteurs peuvent toujours détecter et bloquer l'accès malgré les techniques anti-détection
-- L'utilisation intensive peut entraîner des restrictions temporaires de votre IP
+- Sites may modify their HTML structures, which could break the CSS selectors used for extraction
+- Result extraction can be slow (5-15 seconds per engine) as it simulates a complete browser
+- Some engines may still detect and block access despite anti-detection techniques
+- Intensive use may result in temporary IP restrictions
 
-## Licence
+## License
 
-Ce projet est sous licence MIT.
+This project is under the MIT license.
 
 ---
 
-_Note: Cette application est conçue à des fins éducatives. Veuillez respecter les conditions d'utilisation des moteurs de recherche et utiliser cette application de manière responsable et éthique xoxo._
+_Note: This application is designed for educational purposes. Please respect the terms of use of search engines and use this application responsibly and ethically xoxo._

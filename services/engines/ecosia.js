@@ -1,21 +1,21 @@
 const utils = require("./utils");
 
 /**
- * Recherche sur Ecosia avec Puppeteer
- * @param {string} query - Le terme de recherche
- * @param {string} region - La région pour le user agent
- * @param {string} language - La langue pour le user agent
- * @returns {Promise<Array>} Tableau des résultats de recherche
+ * Search on Ecosia with Puppeteer
+ * @param {string} query - Search term
+ * @param {string} region - Region for user agent
+ * @param {string} language - Language for user agent
+ * @returns {Promise<Array>} Array of search results
  */
 async function searchEcosia(query, region, language) {
-  console.log(`\n🔍 Tentative de recherche Ecosia pour: "${query}"`);
+  console.log(`\n🔍 Attempting Ecosia search for: "${query}"`);
   let browser;
   try {
     browser = await utils.getBrowser();
-    console.log("📝 Configuration de la page Ecosia...");
+    console.log("📝 Setting up Ecosia page...");
     const page = await browser.newPage();
 
-    // Masquer la signature Puppeteer/WebDriver
+    // Hide Puppeteer/WebDriver signature
     await page.evaluateOnNewDocument(() => {
       Object.defineProperty(navigator, "webdriver", {
         get: () => false,
@@ -33,20 +33,20 @@ async function searchEcosia(query, region, language) {
       });
     });
 
-    // Configurer un user agent approprié à la région/langue
+    // Configure appropriate user agent for region/language
     const userAgent = await utils.getUserAgent(region, language);
     await page.setUserAgent(userAgent);
-    console.log(`🔒 User-Agent configuré: ${userAgent.substring(0, 50)}...`);
+    console.log(`🔒 User-Agent configured: ${userAgent.substring(0, 50)}...`);
 
-    // Configurer des comportements aléatoires
+    // Configure random behaviors
     await page.setViewport({
       width: 1500 + Math.floor(Math.random() * 100),
       height: 850 + Math.floor(Math.random() * 100),
       deviceScaleFactor: 1,
     });
 
-    console.log(`🌐 Navigation vers Ecosia...`);
-    // Naviguer vers Ecosia et attendre que la page se charge
+    console.log(`🌐 Navigating to Ecosia...`);
+    // Navigate to Ecosia and wait for page to load
     await page.goto(
       `https://www.ecosia.org/search?method=index&q=${encodeURIComponent(
         query
@@ -57,12 +57,12 @@ async function searchEcosia(query, region, language) {
       }
     );
 
-    console.log(`⏳ Attente après chargement de la page...`);
-    // Petite pause pour éviter la détection
+    console.log(`⏳ Waiting after page load...`);
+    // Short pause to avoid detection
     await utils.randomDelay(2000, 4000);
 
-    console.log(`🍪 Vérification des popups et consentements...`);
-    // Gérer les bannières de consentement
+    console.log(`🍪 Checking for popups and consent notices...`);
+    // Handle consent banners
     try {
       const selectors = [
         "#accept",
@@ -73,18 +73,18 @@ async function searchEcosia(query, region, language) {
 
       for (const selector of selectors) {
         if (await page.$(selector)) {
-          console.log(`🖱️ Popup détecté, clique sur ${selector}`);
+          console.log(`🖱️ Popup detected, clicking on ${selector}`);
           await page.click(selector);
           await page.waitForTimeout(2000);
           break;
         }
       }
     } catch (e) {
-      console.log("ℹ️ Pas de popup à fermer ou erreur:", e.message);
+      console.log("ℹ️ No popup to close or error:", e.message);
     }
 
-    console.log(`🖱️ Simulation de scrolling pour paraître humain...`);
-    // Ajouter un scrolling plus naturel
+    console.log(`🖱️ Simulating scrolling to appear human...`);
+    // Add more natural scrolling
     await page.evaluate(() => {
       const maxScrolls = 4 + Math.floor(Math.random() * 3);
       let currentScroll = 0;
@@ -102,12 +102,12 @@ async function searchEcosia(query, region, language) {
 
     await utils.randomDelay(2500, 4000);
 
-    console.log(`🔍 Extraction des résultats Ecosia...`);
-    // Extraire les résultats avec plusieurs tentatives de sélecteurs
+    console.log(`🔍 Extracting Ecosia results...`);
+    // Extract results with multiple selector attempts
     const results = await page.evaluate(() => {
       const searchResults = [];
 
-      // Définir plusieurs jeux de sélecteurs car Ecosia change souvent
+      // Define multiple selector sets as Ecosia changes often
       const selectorSets = [
         {
           container: ".result",
@@ -135,17 +135,17 @@ async function searchEcosia(query, region, language) {
         },
       ];
 
-      // Essayer chaque jeu de sélecteurs
+      // Try each selector set
       for (const selectors of selectorSets) {
         const elements = document.querySelectorAll(selectors.container);
         console.log(
-          `Essai avec ${selectors.container}: ${elements.length} éléments trouvés`
+          `Trying with ${selectors.container}: ${elements.length} elements found`
         );
 
         if (elements.length > 0) {
           elements.forEach((element, index) => {
             if (index < 20) {
-              // Augmenté pour obtenir plus de résultats
+              // Increased to get more results
               const titleElement = element.querySelector(selectors.title);
               const linkElement =
                 element.querySelector(selectors.link) || titleElement;
@@ -157,7 +157,7 @@ async function searchEcosia(query, region, language) {
                   url: linkElement.href,
                   description: snippetElement
                     ? snippetElement.innerText.trim()
-                    : "Pas de description disponible",
+                    : "No description available",
                 });
               }
             }
@@ -169,9 +169,9 @@ async function searchEcosia(query, region, language) {
         }
       }
 
-      // Approche de secours si les sélecteurs spécifiques ne fonctionnent pas
+      // Fallback approach if specific selectors don't work
       if (searchResults.length === 0) {
-        console.log("Essai avec une méthode de secours générique");
+        console.log("Trying with a generic fallback method");
         const allLinks = document.querySelectorAll(
           'main a[href^="http"]:not([href*="ecosia.org"])'
         );
@@ -182,8 +182,8 @@ async function searchEcosia(query, region, language) {
             link.textContent &&
             link.textContent.trim().length > 10
           ) {
-            // Trouver un élément texte à proximité qui pourrait être une description
-            let description = "Pas de description disponible";
+            // Find a nearby text element that could be a description
+            let description = "No description available";
             const parent = link.closest("div");
             if (parent) {
               const possibleDescription = parent.querySelector("p");
@@ -205,32 +205,32 @@ async function searchEcosia(query, region, language) {
     });
 
     console.log(
-      `🏁 Extraction Ecosia terminée, ${results.length} résultats trouvés`
+      `🏁 Ecosia extraction completed, ${results.length} results found`
     );
     await browser.close();
 
     if (results.length === 0) {
-      console.log(`⚠️ Aucun résultat trouvé pour Ecosia`);
+      console.log(`⚠️ No results found for Ecosia`);
       return [
         {
-          title: `Aucun résultat Ecosia pour "${query}"`,
+          title: `No Ecosia results for "${query}"`,
           url: `https://www.ecosia.org/search?q=${encodeURIComponent(query)}`,
           description:
-            "Le scraping a fonctionné mais n'a trouvé aucun résultat. Peut-être une erreur dans les sélecteurs CSS ou Ecosia a changé sa structure HTML.",
+            "Scraping worked but found no results. Possibly an error in CSS selectors or Ecosia changed its HTML structure.",
         },
       ];
     }
 
     return results;
   } catch (error) {
-    console.error(`❌ Erreur lors de la recherche Ecosia:`, error.message);
+    console.error(`❌ Error during Ecosia search:`, error.message);
     if (browser) await browser.close();
 
     return [
       {
-        title: "Erreur de recherche Ecosia",
+        title: "Ecosia search error",
         url: `https://www.ecosia.org/search?q=${encodeURIComponent(query)}`,
-        description: `Erreur lors du scraping: ${error.message}. Ecosia bloque probablement les requêtes automatisées.`,
+        description: `Error during scraping: ${error.message}. Ecosia is probably blocking automated requests.`,
       },
     ];
   }
