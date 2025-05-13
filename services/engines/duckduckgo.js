@@ -1,4 +1,4 @@
-const utils = require("./utils");
+const utils = require("./utils/index");
 
 /**
  * Search on DuckDuckGo with Puppeteer
